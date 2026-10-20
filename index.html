@@ -165,7 +165,6 @@ tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
         <button class="btn" id="stop" hidden>停止</button>
         <span class="hint" id="ai-status"></span>
       </div>
-      <div id="ai-note" class="alert warn" hidden></div>
       <label class="f" style="max-width:200px">收據日期<input type="date" id="date"></label>
       <div id="lines" style="display:flex;flex-direction:column;gap:10px"></div>
       <div class="row"><button class="btn small" id="add-line">＋ 新增一行</button></div>
@@ -429,7 +428,7 @@ async function startDraft(file){
   } else d.rows.push(blankRow());
   draft = d;
   $("#verified").checked = false; $("#date").value = d.date; $("#rtotal").value = "";
-  $("#ai-status").textContent = ""; $("#ai-note").hidden = true;
+  $("#ai-status").textContent = "";
   render();
   if (file && settings.key && people.length) recognize();
 }
@@ -533,8 +532,6 @@ async function recognize(isRetry){
     const secs = Math.round((Date.now() - t0) / 1000);
     const modeName = { turbo: "極速", fast: "快速", careful: "仔細" }[settings.mode];
     $("#ai-status").textContent = (d.rows.length ? `${secs} 秒讀到 ${d.rows.length} 筆，請逐筆核對` : `${secs} 秒，沒有讀到明細，請手動新增`) + `（${settings.model} · ${modeName}）`;
-    const note = String(res.notes ?? "").trim();
-    $("#ai-note").textContent = note ? "AI 備註：" + note : ""; $("#ai-note").hidden = !note;
   } catch (e) {
     clearInterval(timer);
     let m;
