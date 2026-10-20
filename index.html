@@ -203,7 +203,8 @@ tr.detail td{background:var(--sunk);padding:8px 10px}
       <label class="f">API 金鑰<input type="password" id="gkey" autocomplete="off" placeholder="AIza…"></label>
       <label class="f">模型<select id="gmodel"></select></label>
       <label class="f">辨識模式<select id="gmode">
-        <option value="fast">快速（建議）：少思考、照片較小</option>
+        <option value="turbo">極速：幾乎不思考、照片最小</option>
+        <option value="fast">快速：少思考、照片較小</option>
         <option value="careful">仔細：字跡潦草時用，比較慢</option>
       </select></label>
       <div class="row">
@@ -266,7 +267,7 @@ auth.onAuthStateChanged(user => {
   }, denied));
   unsubs.push(fs.doc("config/settings").onSnapshot(s => {
     const d = s.data() || {};
-    settings = { key: d.geminiKey || "", model: d.model || DEFAULT_MODEL, mode: d.mode === "careful" ? "careful" : "fast" };
+    settings = { key: d.geminiKey || "", model: d.model || DEFAULT_MODEL, mode: ["turbo", "fast", "careful"].includes(d.mode) ? d.mode : "turbo" };
     if (!$("#gkey").matches(":focus")) $("#gkey").value = settings.key;
     $("#gmode").value = settings.mode;
     fillModels([settings.model]); render();
@@ -334,12 +335,12 @@ $("#manual").onclick = () => startDraft(null);
 
 async function startDraft(file){
   if (file && !file.type.startsWith("image/")) { toast("請選擇照片檔"); return; }
-  let hash = null, aiImg = null, fastImg = null, keepImg = null;
+  let hash = null, aiImg = null, fastImg = null, turboImg = null, keepImg = null;
   if (file) {
-    try { [hash, aiImg, fastImg, keepImg] = await Promise.all([sha256(file), toJpeg(file, 1800, .88), toJpeg(file, 1280, .85), toJpeg(file, 1200, .7)]); }
+    try { [hash, aiImg, fastImg, turboImg, keepImg] = await Promise.all([sha256(file), toJpeg(file, 1800, .88), toJpeg(file, 1280, .85), toJpeg(file, 1024, .85), toJpeg(file, 1200, .7)]); }
     catch { toast("這張照片無法讀取，請換一張（iPhone 的 HEIC 可改用「最相容」格式拍攝）"); return; }
   }
-  draft = { rid: "r" + uid(), hasPhoto: !!file, hash, aiImg, fastImg, keepImg, date: today(), rows: [], rtotal: "", aiDone: false, active: null };
+  draft = { rid: "r" + uid(), hasPhoto: !!file, hash, aiImg, fastImg, turboImg, keepImg, date: today(), rows: [], rtotal: "", aiDone: false, active: null };
   if (!file) draft.rows.push(blankRow());
   $("#verified").checked = false; $("#date").value = draft.date; $("#rtotal").value = "";
   $("#ai-status").textContent = ""; $("#ai-note").hidden = true;
@@ -384,7 +385,8 @@ function parseJson(text){
 let thinkingOk = {};   // model -> index of the setting that worked
 function thinkingOptions(model, mode){
   if (mode === "careful") return [null];
-  if (/gemini-2\./.test(model)) return [{ thinkingBudget: 0 }, { thinkingBudget: 512 }, null];
+  if (/gemini-2\./.test(model)) return mode === "turbo" ? [{ thinkingBudget: 0 }, null] : [{ thinkingBudget: 512 }, { thinkingBudget: 0 }, null];
+  if (mode === "turbo") return [{ thinkingLevel: "minimal" }, { thinkingBudget: 0 }, { thinkingLevel: "low" }, null];
   return [{ thinkingLevel: "low" }, { thinkingBudget: 512 }, null];
 }
 async function callGemini(prompt, dataUrl, signal){
@@ -424,7 +426,8 @@ async function recognize(){
   const tick = () => { $("#ai-status").textContent = `Gemini 辨識中… ${Math.round((Date.now() - t0) / 1000)} 秒`; };
   tick(); const timer = setInterval(tick, 1000);
   try {
-    const text = await callGemini(buildPrompt(), settings.mode === "careful" ? d.aiImg : d.fastImg, ctl.signal);
+    const img = settings.mode === "careful" ? d.aiImg : settings.mode === "fast" ? d.fastImg : d.turboImg;
+    const text = await callGemini(buildPrompt(), img, ctl.signal);
     clearInterval(timer);
     const res = parseJson(text);
     if (!res) throw Object.assign(new Error("bad json"), { status: -1 });
@@ -441,7 +444,8 @@ async function recognize(){
     d.rtotal = rt == null ? "" : String(rt); $("#rtotal").value = d.rtotal;
     d.aiDone = true;
     const secs = Math.round((Date.now() - t0) / 1000);
-    $("#ai-status").textContent = d.rows.length ? `${secs} 秒讀到 ${d.rows.length} 行，請逐行核對` : "沒有讀到明細行，請手動新增";
+    const modeName = { turbo: "極速", fast: "快速", careful: "仔細" }[settings.mode];
+    $("#ai-status").textContent = (d.rows.length ? `${secs} 秒讀到 ${d.rows.length} 行，請逐行核對` : `${secs} 秒，沒有讀到明細行，請手動新增`) + `（${settings.model} · ${modeName}）`;
     const note = String(res.notes ?? "").trim();
     $("#ai-note").textContent = note ? "AI 備註：" + note : ""; $("#ai-note").hidden = !note;
   } catch (e) {
