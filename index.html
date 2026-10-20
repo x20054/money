@@ -223,9 +223,10 @@ tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
       </table></div>
     </div>
     <div class="box">
-      <div><h2>匯出 Excel</h2><p class="sub">每人一欄：上方是起始金額與每筆入金，中間是扣款，最後一列是現餘額。儲存格的註解會記下日期和收據編號。</p></div>
+      <div><h2>匯出 Excel</h2><p class="sub">每人一欄：上方是起始金額與入金，中間是扣款，最後一列是現餘額。儲存格的註解會記下日期和收據編號。</p></div>
       <div class="form">
-        <label class="f">算到哪一天<input type="date" id="ex-end"></label>
+        <label class="f">起始日期（空白＝從頭開始）<input type="date" id="ex-start"></label>
+        <label class="f">結束日期<input type="date" id="ex-end"></label>
         <label class="f">扣款怎麼分列<select id="ex-group">
           <option value="month">每個月一列</option>
           <option value="all">全部合成一列</option>
@@ -868,32 +869,47 @@ $("#ex-end").value = today();
 $("#ex-go").onclick = async () => {
   if (!window.ExcelJS) { $("#ex-state").textContent = "Excel 元件載入失敗，請重新整理後再試"; return; }
   if (!people.length) { $("#ex-state").textContent = "還沒有人員"; return; }
-  const end = $("#ex-end").value || today(), byMonth = $("#ex-group").value === "month";
-  const L = ledger().filter(e => (e.date || "") <= end);
+  const start = $("#ex-start").value, end = $("#ex-end").value || today(), byMonth = $("#ex-group").value === "month";
+  if (start && start > end) { $("#ex-state").textContent = "起始日期不能晚於結束日期"; return; }
+  const all = ledger().filter(e => (e.date || "") <= end);
+  const before = start ? all.filter(e => (e.date || "") < start) : [];   // 起始日之前的紀錄併成期初餘額
+  const L = start ? all.filter(e => (e.date || "") >= start) : all;
   const md = d => d.slice(5, 7) + d.slice(8, 10);
   const short = d => d.slice(5).replace("-", "/");
 
   const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet("餐費紀錄");
   const font = { name: "新細明體", size: 12 };
   const n = people.length, lastCol = n + 1;
-  ws.getColumn(1).width = 16;
+  ws.getColumn(1).width = 18;
   for (let j = 2; j <= lastCol; j++) ws.getColumn(j).width = 11;
 
   // 第 1 列：姓名
   ws.getRow(1).values = ["項目/金額", ...people.map(p => p.name)];
 
-  // 入金區：每人從上往下列出起始金額和每筆入金
-  const blocks = people.map(p => {
-    const items = [];
-    if (Number(p.start)) items.push({ v: Number(p.start), note: "起始金額" });
-    L.filter(e => e.type === "in" && e.personId === p.id).forEach(e => items.push({ v: e.amount, note: `${e.date} ${e.label}` }));
-    return items;
-  });
+  // 起始金額一列，再來每人從上往下列出每筆入金，左欄標「入金」
   let r = 2;
-  const depRows = Math.max(0, ...blocks.map(b => b.length));
-  for (let i = 0; i < depRows; i++, r++) {
-    blocks.forEach((b, j) => { if (b[i]) { const c = ws.getCell(r, j + 2); c.value = b[i].v; c.note = b[i].note; } });
+  const opening = people.map(p => (Number(p.start) || 0) + before.filter(e => e.personId === p.id).reduce((s, e) => s + e.amount, 0));
+  if (start || opening.some(v => v)) {
+    ws.getCell(r, 1).value = start ? "期初餘額 " + start.replaceAll("-", "/") : "起始金額";
+    if (start) ws.getCell(r, 1).note = `起始金額加上 ${start.replaceAll("-", "/")} 之前所有的入金與扣款`;
+    people.forEach((p, j) => { if (opening[j] || start) ws.getCell(r, j + 2).value = opening[j]; });
+    r++;
   }
+  // 同一天的入金放同一列，左欄寫「入金 日期」
+  const byDate = new Map();
+  L.filter(e => e.type === "in").forEach(e => { if (!byDate.has(e.date)) byDate.set(e.date, []); byDate.get(e.date).push(e); });
+  [...byDate.keys()].sort().forEach(date => {
+    ws.getCell(r, 1).value = "入金 " + date.replaceAll("-", "/");
+    people.forEach((p, j) => {
+      const mine = byDate.get(date).filter(e => e.personId === p.id);
+      if (!mine.length) return;
+      const c = ws.getCell(r, j + 2);
+      c.value = mine.reduce((s, e) => s + e.amount, 0);
+      const notes = mine.map(e => e.label.replace(/^入金・?/, "")).filter(Boolean);
+      if (notes.length) c.note = notes.join("\n");
+    });
+    r++;
+  });
 
   // 扣款區：依月份或整段分列，每格是該期間的扣款合計
   const outs = L.filter(e => e.type === "out");
@@ -921,7 +937,7 @@ $("#ex-go").onclick = async () => {
   ws.getCell(balRow, 1).value = "現餘額";
   people.forEach((p, j) => {
     const col = ws.getColumn(j + 2).letter;
-    const result = (Number(p.start) || 0) + L.filter(e => e.personId === p.id).reduce((s, e) => s + e.amount, 0);
+    const result = opening[j] + L.filter(e => e.personId === p.id).reduce((s, e) => s + e.amount, 0);
     ws.getCell(balRow, j + 2).value = balRow > 2 ? { formula: `SUM(${col}2:${col}${balRow - 1})`, result } : result;
   });
 
@@ -942,10 +958,10 @@ $("#ex-go").onclick = async () => {
   try {
     const buf = await wb.xlsx.writeBuffer();
     const url = URL.createObjectURL(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
-    const a = document.createElement("a"); a.href = url; a.download = `餐費紀錄本_${end}.xlsx`;
+    const a = document.createElement("a"); a.href = url; a.download = `餐費紀錄本_${start ? start + "_" : ""}${end}.xlsx`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-    $("#ex-state").textContent = `已下載，算到 ${end}`;
+    $("#ex-state").textContent = `已下載：${start || "從頭"} 到 ${end}`;
   } catch (e) { $("#ex-state").textContent = "匯出失敗：" + e.message; }
 };
 
