@@ -19,6 +19,7 @@ window.FIREBASE_CONFIG = {
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
 /* Layout: one narrow ledger column; tabs on top, receipt photo above its editable rows, totals under the rows. */
 :root{
@@ -220,6 +221,17 @@ tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
         <tbody id="led-body"></tbody>
         <tfoot id="led-foot"></tfoot>
       </table></div>
+    </div>
+    <div class="box">
+      <div><h2>匯出 Excel</h2><p class="sub">每人一欄：上方是起始金額與每筆入金，中間是扣款，最後一列是現餘額。儲存格的註解會記下日期和收據編號。</p></div>
+      <div class="form">
+        <label class="f">算到哪一天<input type="date" id="ex-end"></label>
+        <label class="f">扣款怎麼分列<select id="ex-group">
+          <option value="month">每個月一列</option>
+          <option value="all">全部合成一列</option>
+        </select></label>
+      </div>
+      <div class="row"><button class="btn primary" id="ex-go">下載 Excel</button><span class="hint" id="ex-state"></span></div>
     </div>
     <div class="box">
       <h2>收據紀錄</h2>
@@ -850,6 +862,92 @@ $("#rc-list").addEventListener("click", async e => {
     catch { toast("撤銷失敗，請再試一次"); b.disabled = false; }
   }
 });
+
+/* ---------- 匯出 Excel ---------- */
+$("#ex-end").value = today();
+$("#ex-go").onclick = async () => {
+  if (!window.ExcelJS) { $("#ex-state").textContent = "Excel 元件載入失敗，請重新整理後再試"; return; }
+  if (!people.length) { $("#ex-state").textContent = "還沒有人員"; return; }
+  const end = $("#ex-end").value || today(), byMonth = $("#ex-group").value === "month";
+  const L = ledger().filter(e => (e.date || "") <= end);
+  const md = d => d.slice(5, 7) + d.slice(8, 10);
+  const short = d => d.slice(5).replace("-", "/");
+
+  const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet("餐費紀錄");
+  const font = { name: "新細明體", size: 12 };
+  const n = people.length, lastCol = n + 1;
+  ws.getColumn(1).width = 16;
+  for (let j = 2; j <= lastCol; j++) ws.getColumn(j).width = 11;
+
+  // 第 1 列：姓名
+  ws.getRow(1).values = ["項目/金額", ...people.map(p => p.name)];
+
+  // 入金區：每人從上往下列出起始金額和每筆入金
+  const blocks = people.map(p => {
+    const items = [];
+    if (Number(p.start)) items.push({ v: Number(p.start), note: "起始金額" });
+    L.filter(e => e.type === "in" && e.personId === p.id).forEach(e => items.push({ v: e.amount, note: `${e.date} ${e.label}` }));
+    return items;
+  });
+  let r = 2;
+  const depRows = Math.max(0, ...blocks.map(b => b.length));
+  for (let i = 0; i < depRows; i++, r++) {
+    blocks.forEach((b, j) => { if (b[i]) { const c = ws.getCell(r, j + 2); c.value = b[i].v; c.note = b[i].note; } });
+  }
+
+  // 扣款區：依月份或整段分列，每格是該期間的扣款合計
+  const outs = L.filter(e => e.type === "out");
+  const groups = new Map();
+  if (byMonth) outs.forEach(e => { const k = (e.date || "").slice(0, 7); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); });
+  else if (outs.length) {
+    const ds = outs.map(e => e.date).sort(), a = ds[0], z = ds[ds.length - 1];
+    groups.set(a.slice(0, 4) === z.slice(0, 4) ? `${md(a)}-${md(z)}` : `${a.replaceAll("-", "")}-${z.replaceAll("-", "")}`, outs);
+  }
+  [...groups.keys()].sort().forEach(k => {
+    const list = groups.get(k);
+    ws.getCell(r, 1).value = byMonth ? k.replace("-", "/") : k;
+    people.forEach((p, j) => {
+      const mine = list.filter(e => e.personId === p.id);
+      if (!mine.length) return;
+      const c = ws.getCell(r, j + 2);
+      c.value = mine.reduce((s, e) => s + e.amount, 0);
+      c.note = mine.map(e => `${short(e.date)} ${e.label} ${-e.amount}`).join("\n");
+    });
+    r++;
+  });
+
+  // 現餘額：用 SUM 公式，Excel 打開後改數字也會自動重算
+  const balRow = r;
+  ws.getCell(balRow, 1).value = "現餘額";
+  people.forEach((p, j) => {
+    const col = ws.getColumn(j + 2).letter;
+    const result = (Number(p.start) || 0) + L.filter(e => e.personId === p.id).reduce((s, e) => s + e.amount, 0);
+    ws.getCell(balRow, j + 2).value = balRow > 2 ? { formula: `SUM(${col}2:${col}${balRow - 1})`, result } : result;
+  });
+
+  // 樣式：格線、數字靠右、現餘額粗體且負數紅字、下方粗線
+  for (let i = 1; i <= balRow; i++) {
+    const row = ws.getRow(i); row.height = 20;
+    for (let j = 1; j <= lastCol; j++) {
+      const c = row.getCell(j);
+      c.font = { ...font, bold: i === balRow };
+      c.border = { top: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" }, bottom: { style: i === balRow ? "medium" : "thin" } };
+      if (j > 1 && i > 1) { c.numFmt = i === balRow ? "0;[Red]-0" : "0"; c.alignment = { horizontal: "right", vertical: "middle" }; }
+      else c.alignment = { vertical: "middle" };
+    }
+  }
+  ws.getRow(balRow).height = 24;
+  ws.views = [{ state: "frozen", xSplit: 1, ySplit: 1 }];
+
+  try {
+    const buf = await wb.xlsx.writeBuffer();
+    const url = URL.createObjectURL(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+    const a = document.createElement("a"); a.href = url; a.download = `餐費紀錄本_${end}.xlsx`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    $("#ex-state").textContent = `已下載，算到 ${end}`;
+  } catch (e) { $("#ex-state").textContent = "匯出失敗：" + e.message; }
+};
 
 /* ---------- 人員 ---------- */
 function usedIds(){
