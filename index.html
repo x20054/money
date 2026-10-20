@@ -208,6 +208,7 @@ tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
   <section class="panel" id="p-over" hidden>
     <div class="box">
       <div class="row spread"><h2>每人餘額</h2><span class="hint">點姓名看收支明細</span></div>
+      <label class="check" id="show-inactive-row" hidden><input type="checkbox" id="show-inactive"> 顯示已停用人員</label>
       <div class="scroll"><table>
         <thead><tr><th>姓名</th><th class="n">起始</th><th class="n">扣款</th><th class="n">餘額</th></tr></thead>
         <tbody id="over-body"></tbody>
@@ -241,6 +242,12 @@ tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
     </div>
     <div class="box">
       <h2>收據紀錄</h2>
+      <div class="form">
+        <label class="f">起始日期<input type="date" id="rc-from"></label>
+        <label class="f">結束日期<input type="date" id="rc-to"></label>
+        <button class="btn" id="rc-clear">清除日期</button>
+      </div>
+      <div class="hint" id="rc-count"></div>
       <div id="rc-list"></div>
     </div>
   </section>
@@ -248,7 +255,7 @@ tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
   <!-- 設定 -->
   <section class="panel" id="p-people" hidden>
     <div class="box">
-      <div><h2>人員與簡稱</h2><p class="sub">簡稱就是收據上手寫的字，每人一個、不能重複。起始金額是開始記帳時已有的餘額，之後存錢請用「入金」。已有紀錄的人不能刪除。</p></div>
+      <div><h2>人員與簡稱</h2><p class="sub">簡稱就是收據上手寫的字，每人一個、不能重複。起始金額是開始記帳時已有的餘額，之後存錢請用「入金」。已有紀錄的人不能刪除，可以改成「停用」。</p></div>
       <div id="pp-list" style="display:flex;flex-direction:column;gap:10px"></div>
       <div class="row"><button class="btn small" id="pp-add">＋ 新增人員</button></div>
       <div id="pp-err" class="alert bad" hidden></div>
@@ -407,11 +414,13 @@ function showTab(t){
 
 /* ---------- helpers ---------- */
 const personById = id => people.find(p => p.id === id);
-function matchAlias(a){ a = String(a || "").trim(); if (!a) return ""; const p = people.find(p => p.alias === a); return p ? p.id : ""; }
+const isActive = p => p && p.active !== false;
+const activePeople = () => people.filter(isActive);
+function matchAlias(a){ a = String(a || "").trim(); if (!a) return ""; const p = activePeople().find(p => p.alias === a); return p ? p.id : ""; }
 // 「柏浩」這種連寫：若整段剛好由已登記簡稱組成，就拆開
 function segmentAliases(token){
   if (matchAlias(token)) return [token];
-  const al = people.map(p => p.alias).filter(Boolean).sort((a, b) => b.length - a.length);
+  const al = activePeople().map(p => p.alias).filter(Boolean).sort((a, b) => b.length - a.length);
   const memo = new Map();
   const go = i => {
     if (i === token.length) return [];
@@ -437,6 +446,7 @@ function toBox(b){
 }
 function rowStatus(r){
   if (!r.personId || !personById(r.personId)) return {s:"bad", why: r.alias ? `簡稱「${r.alias}」不在人員表裡，請選擇人員` : "請選擇人員"};
+  if (!isActive(personById(r.personId))) return {s:"bad", why:"這位人員已停用，請改選其他人員或到設定重新啟用"};
   if (r.amount == null) return {s:"bad", why:"金額無法辨識，請對照原圖輸入"};
   if (r.ok) return {s:"ok", why: r.manual ? "" : "已人工核對"};
   const w = [];
@@ -447,10 +457,10 @@ function rowStatus(r){
 }
 const label = {ok:"可扣款", warn:"需核對", bad:"無法辨識"};
 function fillPersonSelects(){
-  const opts = people.map(p => `<option value="${esc(p.id)}">${esc(p.name)}（${esc(p.alias)}）</option>`).join("");
+  const opt = p => `<option value="${esc(p.id)}">${esc(p.name)}（${esc(p.alias)}）${isActive(p) ? "" : "・已停用"}</option>`;
   const keep = (sel, html) => { const v = sel.value; sel.innerHTML = html; if ([...sel.options].some(o => o.value === v)) sel.value = v; };
-  keep($("#dep-person"), `<option value="">— 選擇人員 —</option>` + opts);
-  keep($("#led-person"), `<option value="">全部人員</option>` + opts);
+  keep($("#dep-person"), `<option value="">— 選擇人員 —</option>` + activePeople().map(opt).join(""));
+  keep($("#led-person"), `<option value="">全部人員</option>` + people.map(opt).join(""));   // 查歷史時停用的人也要能選
 }
 
 /* ---------- 照片：讀取、轉向、壓縮 ---------- */
@@ -496,7 +506,7 @@ async function startDraft(file){
   $("#verified").checked = false; $("#date").value = d.date; $("#rtotal").value = "";
   $("#ai-status").textContent = "";
   render();
-  if (file && settings.key && people.length) recognize();
+  if (file && settings.key && activePeople().length) recognize();
 }
 function blankRow(){ return { k: uid(), alias:"", personId:"", amount:null, aliasClear:true, amountClear:true, alts:[], box:null, raw:"", group:"", ok:true, manual:true }; }
 $("#discard").onclick = () => { ctl?.abort(); draft = null; render(); };
@@ -507,7 +517,7 @@ $("#add-line").onclick = () => { draft.rows.push(blankRow()); renderLines(); ren
 
 /* ---------- Gemini ---------- */
 function buildPrompt(){
-  const list = people.map(p => `「${p.alias}」= ${p.name}`).join("\n");
+  const list = activePeople().map(p => `「${p.alias}」= ${p.name}`).join("\n");
   return `你是收據手寫辨識助手。圖片是一張台灣的餐費收據，多半是手寫繁體中文。每一行通常是「人名簡稱 + 金額」，也可能有合計、找零、日期等其他欄位。
 
 已登記的簡稱：
@@ -567,7 +577,7 @@ $("#stop").onclick = () => ctl?.abort();
 async function recognize(isRetry){
   if (!draft?.hasPhoto) return;
   if (!settings.key) { toast("請先到設定填 Gemini API 金鑰"); return; }
-  if (!people.length) { toast("請先到設定新增人員與簡稱"); return; }
+  if (!activePeople().length) { toast("請先到設定新增人員與簡稱"); return; }
   ctl = new AbortController();
   $("#recognize").disabled = true; $("#stop").hidden = false;
   const d = draft, t0 = Date.now(); let rerun = false;
@@ -674,7 +684,7 @@ function renderBoxes(){
   });
 }
 function renderLines(){
-  const opts = `<option value="">— 選擇人員 —</option>` + people.map(p => `<option value="${esc(p.id)}">${esc(p.name)}（${esc(p.alias)}）</option>`).join("");
+  const opts = `<option value="">— 選擇人員 —</option>` + activePeople().map(p => `<option value="${esc(p.id)}">${esc(p.name)}（${esc(p.alias)}）</option>`).join("");
   $("#lines").innerHTML = draft.rows.map((r, i) => {
     const st = rowStatus(r);
     return `<div class="line ${st.s}" id="line-${r.k}">
@@ -859,7 +869,9 @@ function renderOverview(){
   if (!people.length) { $("#over-body").innerHTML = `<tr><td colspan="4" class="empty">還沒有人員。到「設定」新增後，每人餘額會列在這裡。</td></tr>`; $("#over-foot").innerHTML = ""; }
   else {
     const sum = { start: 0, dep: 0, out: 0, bal: 0 };
-    $("#over-body").innerHTML = people.map(p => {
+    const showAll = $("#show-inactive").checked;
+    $("#show-inactive-row").hidden = people.every(isActive);
+    $("#over-body").innerHTML = people.filter(p => showAll || isActive(p)).map(p => {
       const t = totalsFor(p.id, L); Object.keys(sum).forEach(k => sum[k] += t[k]);
       let det = "";
       if (openPerson === p.id) {
@@ -869,13 +881,14 @@ function renderOverview(){
           ? `<div class="tl">${rows.map(e => `<span class="num">${esc(e.date)}</span><span>${esc(e.label)}</span><span class="num ${e.amount > 0 ? "pos" : ""}">${signed(e.amount)}</span><span class="num bal">餘 ${money(e.after)}</span>`).join("")}<span class="num">—</span><span>起始金額</span><span></span><span class="num bal">餘 ${money(t.start)}</span></div>`
           : `<span class="hint">還沒有入金或扣款</span>`}</td></tr>`;
       }
-      return `<tr class="person" data-p="${esc(p.id)}"><td>${esc(p.name)} <span class="hint">（${esc(p.alias)}）</span></td><td class="n num">${money(t.start)}</td><td class="n num">${money(-t.out)}</td><td class="n num"><strong class="${t.bal < 0 ? "neg" : ""}">${money(t.bal)}</strong></td></tr>${det}`;
+      return `<tr class="person ${isActive(p) ? "" : "void"}" data-p="${esc(p.id)}"><td>${esc(p.name)} <span class="hint">（${esc(p.alias)}）${isActive(p) ? "" : "・已停用"}</span></td><td class="n num">${money(t.start)}</td><td class="n num">${money(-t.out)}</td><td class="n num"><strong class="${t.bal < 0 ? "neg" : ""}">${money(t.bal)}</strong></td></tr>${det}`;
     }).join("");
     $("#over-foot").innerHTML = `<tr><td>合計</td><td class="n num">${money(sum.start)}</td><td class="n num">${money(-sum.out)}</td><td class="n num"><strong class="${sum.bal < 0 ? "neg" : ""}">${money(sum.bal)}</strong></td></tr>`;
   }
   renderLedgerTable(L);
   renderReceipts();
 }
+$("#show-inactive").addEventListener("change", renderOverview);
 function renderLedgerTable(L){
   const pid = $("#led-person").value, month = $("#led-month").value, type = $("#led-type").value;
   const rows = L.filter(e => (!pid || e.personId === pid) && (!month || (e.date || "").startsWith(month)) && (!type || e.type === type)).reverse();
@@ -888,8 +901,18 @@ function renderLedgerTable(L){
 }
 ["#led-person", "#led-month", "#led-type"].forEach(s => $(s).addEventListener("change", () => renderLedgerTable(ledger())));
 function renderReceipts(){
+  const from = $("#rc-from").value, to = $("#rc-to").value;
+  const list = receipts.filter(r => (!from || (r.date || "") >= from) && (!to || (r.date || "") <= to))
+    .sort((a, b) => (b.date || "").localeCompare(a.date || "") || String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+  const filtered = from || to;
+  if (filtered && from && to && from > to) { $("#rc-count").textContent = "起始日期不能晚於結束日期"; $("#rc-list").innerHTML = ""; return; }
+  const live = list.filter(r => r.status === "posted");
+  $("#rc-count").textContent = filtered && receipts.length
+    ? `${from ? from.replaceAll("-", "/") : "最早"} 到 ${to ? to.replaceAll("-", "/") : "最新"}：${list.length} 張收據，扣款合計 ${money(live.reduce((s, r) => s + (r.total || 0), 0))}${list.length > live.length ? `（已撤銷的 ${list.length - live.length} 張不計）` : ""}`
+    : "";
   $("#rc-list").innerHTML = !receipts.length ? `<div class="empty">扣款的收據會依時間列在這裡，可以看原圖或撤銷。</div>`
-  : receipts.map(r => {
+  : !list.length ? `<div class="empty">這段日期沒有收據。</div>`
+  : list.map(r => {
     const v = r.status !== "posted", ask = confirmVoid === r.id;
     const names = (r.rows || []).map(x => `${esc(personById(x.personId)?.name || x.personName)} ${money(x.amount)}`).join("、");
     const img = openImg === r.id ? (imgCache.has(r.id) ? `<img src="${imgCache.get(r.id)}" alt="收據 #${esc(r.no)} 原圖">` : `<span class="hint">載入原圖中…</span>`) : "";
@@ -905,6 +928,8 @@ function renderReceipts(){
       </div></div>`;
   }).join("");
 }
+["#rc-from", "#rc-to"].forEach(s => $(s).addEventListener("change", renderReceipts));
+$("#rc-clear").onclick = () => { $("#rc-from").value = ""; $("#rc-to").value = ""; renderReceipts(); };
 $("#over-body").addEventListener("click", e => { const tr = e.target.closest("tr.person"); if (!tr) return; openPerson = openPerson === tr.dataset.p ? null : tr.dataset.p; renderOverview(); });
 $("#rc-list").addEventListener("click", async e => {
   const b = e.target.closest("button"); if (!b) return;
@@ -935,23 +960,27 @@ async function exportExcel(start, end, byMonth, stateEl){
   const L = start ? all.filter(e => (e.date || "") >= start) : all;
   const md = d => d.slice(5, 7) + d.slice(8, 10);
   const short = d => d.slice(5).replace("-", "/");
+  const openingOf = p => (Number(p.start) || 0) + before.filter(e => e.personId === p.id).reduce((s, e) => s + e.amount, 0);
+  // 停用的人：期初餘額不是 0，或這段期間有紀錄，才放進 Excel
+  const xp = people.filter(p => isActive(p) || openingOf(p) !== 0 || L.some(e => e.personId === p.id));
+  if (!xp.length) { stateEl.textContent = "沒有可匯出的人員"; return false; }
 
   const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet("餐費紀錄");
   const font = { name: "新細明體", size: 12 };
-  const n = people.length, lastCol = n + 1;
+  const n = xp.length, lastCol = n + 1;
   ws.getColumn(1).width = 18;
   for (let j = 2; j <= lastCol; j++) ws.getColumn(j).width = 11;
 
   // 第 1 列：姓名
-  ws.getRow(1).values = ["項目/金額", ...people.map(p => p.name)];
+  ws.getRow(1).values = ["項目/金額", ...xp.map(p => p.name)];
 
   // 起始金額一列，再來每人從上往下列出每筆入金，左欄標「入金」
   let r = 2;
-  const opening = people.map(p => (Number(p.start) || 0) + before.filter(e => e.personId === p.id).reduce((s, e) => s + e.amount, 0));
+  const opening = xp.map(openingOf);
   if (start || opening.some(v => v)) {
     ws.getCell(r, 1).value = start ? "期初餘額 " + start.replaceAll("-", "/") : "起始金額";
     if (start) ws.getCell(r, 1).note = `起始金額加上 ${start.replaceAll("-", "/")} 之前所有的入金與扣款`;
-    people.forEach((p, j) => { if (opening[j] || start) ws.getCell(r, j + 2).value = opening[j]; });
+    xp.forEach((p, j) => { if (opening[j] || start) ws.getCell(r, j + 2).value = opening[j]; });
     r++;
   }
   // 同一天的入金放同一列，左欄寫「入金 日期」
@@ -959,7 +988,7 @@ async function exportExcel(start, end, byMonth, stateEl){
   L.filter(e => e.type === "in").forEach(e => { if (!byDate.has(e.date)) byDate.set(e.date, []); byDate.get(e.date).push(e); });
   [...byDate.keys()].sort().forEach(date => {
     ws.getCell(r, 1).value = "入金 " + date.replaceAll("-", "/");
-    people.forEach((p, j) => {
+    xp.forEach((p, j) => {
       const mine = byDate.get(date).filter(e => e.personId === p.id);
       if (!mine.length) return;
       const c = ws.getCell(r, j + 2);
@@ -981,7 +1010,7 @@ async function exportExcel(start, end, byMonth, stateEl){
   [...groups.keys()].sort().forEach(k => {
     const list = groups.get(k);
     ws.getCell(r, 1).value = byMonth ? k.replace("-", "/") : k;
-    people.forEach((p, j) => {
+    xp.forEach((p, j) => {
       const mine = list.filter(e => e.personId === p.id);
       if (!mine.length) return;
       const c = ws.getCell(r, j + 2);
@@ -994,7 +1023,7 @@ async function exportExcel(start, end, byMonth, stateEl){
   // 現餘額：用 SUM 公式，Excel 打開後改數字也會自動重算
   const balRow = r;
   ws.getCell(balRow, 1).value = "現餘額";
-  people.forEach((p, j) => {
+  xp.forEach((p, j) => {
     const col = ws.getColumn(j + 2).letter;
     const result = opening[j] + L.filter(e => e.personId === p.id).reduce((s, e) => s + e.amount, 0);
     ws.getCell(balRow, j + 2).value = balRow > 2 ? { formula: `SUM(${col}2:${col}${balRow - 1})`, result } : result;
@@ -1173,7 +1202,7 @@ function usedIds(){
 }
 function renderPeople(){
   if (!peopleEdit) peopleEdit = people.map(p => ({...p}));
-  const used = usedIds();
+  const used = usedIds(), L = ledger();
   $("#pp-list").innerHTML = peopleEdit.length ? peopleEdit.map((p, i) => `<div class="pp">
       <label class="f">姓名<input id="pn-${p.id}" data-i="${i}" data-f="name" value="${esc(p.name)}" maxlength="20"></label>
       <label class="f">簡稱<input id="pa-${p.id}" data-i="${i}" data-f="alias" value="${esc(p.alias)}" maxlength="4"></label>
@@ -1181,8 +1210,12 @@ function renderPeople(){
       <div class="ops">
         <button class="btn small" data-mv="-1" data-i="${i}" ${i === 0 ? "disabled" : ""} aria-label="上移">↑</button>
         <button class="btn small" data-mv="1" data-i="${i}" ${i === peopleEdit.length - 1 ? "disabled" : ""} aria-label="下移">↓</button>
-        <button class="btn small danger" data-del="${i}" ${used.has(p.id) ? "disabled title=\"已有紀錄，不能刪除\"" : ""}>刪除</button>
-      </div></div>`).join("")
+        ${used.has(p.id)
+          ? `<button class="btn small" data-act="${i}">${p.active === false ? "重新啟用" : "停用"}</button>`
+          : `<button class="btn small danger" data-del="${i}">刪除</button>`}
+      </div>
+      ${p.active === false ? `<div class="hint" style="grid-column:1/-1"><span class="pill out">已停用</span> 不會出現在扣款、入金選單和總覽；歷史紀錄保留。目前餘額 ${money(totalsFor(p.id, L).bal)}</div>` : ""}
+      </div>`).join("")
     : `<div class="empty">例如：姓名「王小明」、簡稱「明」、起始金額 0。</div>`;
 }
 const dirty = () => $("#pp-state").textContent = "尚未儲存";
@@ -1192,13 +1225,15 @@ $("#pp-list").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.dataset.mv) { const i = +b.dataset.i, j = i + +b.dataset.mv; [peopleEdit[i], peopleEdit[j]] = [peopleEdit[j], peopleEdit[i]]; renderPeople(); dirty(); }
   if (b.dataset.del) { peopleEdit.splice(+b.dataset.del, 1); renderPeople(); dirty(); }
+  if (b.dataset.act) { const p = peopleEdit[+b.dataset.act]; p.active = p.active === false; renderPeople(); dirty(); }
 });
 $("#pp-save").onclick = async () => {
   const errs = [], seen = new Map();
-  const list = peopleEdit.map(p => ({ id: p.id, name: String(p.name || "").trim(), alias: String(p.alias || "").trim(), start: Number(p.start) || 0 }));
+  const list = peopleEdit.map(p => ({ id: p.id, name: String(p.name || "").trim(), alias: String(p.alias || "").trim(), start: Number(p.start) || 0, active: p.active !== false }));
   list.forEach((p, i) => {
     if (!p.name) errs.push(`第 ${i+1} 位沒有姓名`);
     if (!p.alias) errs.push(`第 ${i+1} 位沒有簡稱`);
+    else if (!p.active) {}   // 停用的人簡稱可以讓給別人用
     else if (seen.has(p.alias)) errs.push(`簡稱「${p.alias}」重複了（${seen.get(p.alias)} 和 ${p.name}）`);
     else seen.set(p.alias, p.name);
     if (!Number.isInteger(p.start)) errs.push(`${p.name || "第 " + (i+1) + " 位"} 的起始金額要是整數`);
@@ -1213,7 +1248,7 @@ $("#pp-save").onclick = async () => {
 
 /* ---------- render ---------- */
 function render(){
-  $("#need-people").hidden = !!people.length;
+  $("#need-people").hidden = !!activePeople().length;
   $("#need-key").hidden = !!settings.key;
   renderDraft(); renderDeposits(); renderOverview(); depPreview(); renderCarry();
 }
