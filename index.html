@@ -209,7 +209,7 @@ tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
     <div class="box">
       <div class="row spread"><h2>每人餘額</h2><span class="hint">點姓名看收支明細</span></div>
       <div class="scroll"><table>
-        <thead><tr><th>姓名</th><th class="n">起始</th><th class="n">入金</th><th class="n">扣款</th><th class="n">餘額</th></tr></thead>
+        <thead><tr><th>姓名</th><th class="n">起始</th><th class="n">扣款</th><th class="n">餘額</th></tr></thead>
         <tbody id="over-body"></tbody>
         <tfoot id="over-foot"></tfoot>
       </table></div>
@@ -816,7 +816,7 @@ $("#dep-list").addEventListener("click", async e => {
 /* ---------- 總覽 ---------- */
 function renderOverview(){
   const L = ledger();
-  if (!people.length) { $("#over-body").innerHTML = `<tr><td colspan="5" class="empty">還沒有人員。到「設定」新增後，每人餘額會列在這裡。</td></tr>`; $("#over-foot").innerHTML = ""; }
+  if (!people.length) { $("#over-body").innerHTML = `<tr><td colspan="4" class="empty">還沒有人員。到「設定」新增後，每人餘額會列在這裡。</td></tr>`; $("#over-foot").innerHTML = ""; }
   else {
     const sum = { start: 0, dep: 0, out: 0, bal: 0 };
     $("#over-body").innerHTML = people.map(p => {
@@ -825,13 +825,13 @@ function renderOverview(){
       if (openPerson === p.id) {
         let run = t.start;
         const rows = L.filter(e => e.personId === p.id).map(e => ({ ...e, after: (run += e.amount) })).reverse();
-        det = `<tr class="detail"><td colspan="5">${rows.length
+        det = `<tr class="detail"><td colspan="4">${rows.length
           ? `<div class="tl">${rows.map(e => `<span class="num">${esc(e.date)}</span><span>${esc(e.label)}</span><span class="num ${e.amount > 0 ? "pos" : ""}">${signed(e.amount)}</span><span class="num bal">餘 ${money(e.after)}</span>`).join("")}<span class="num">—</span><span>起始金額</span><span></span><span class="num bal">餘 ${money(t.start)}</span></div>`
           : `<span class="hint">還沒有入金或扣款</span>`}</td></tr>`;
       }
-      return `<tr class="person" data-p="${esc(p.id)}"><td>${esc(p.name)} <span class="hint">（${esc(p.alias)}）</span></td><td class="n num">${money(t.start)}</td><td class="n num pos">${signed(t.dep)}</td><td class="n num">${money(-t.out)}</td><td class="n num"><strong class="${t.bal < 0 ? "neg" : ""}">${money(t.bal)}</strong></td></tr>${det}`;
+      return `<tr class="person" data-p="${esc(p.id)}"><td>${esc(p.name)} <span class="hint">（${esc(p.alias)}）</span></td><td class="n num">${money(t.start)}</td><td class="n num">${money(-t.out)}</td><td class="n num"><strong class="${t.bal < 0 ? "neg" : ""}">${money(t.bal)}</strong></td></tr>${det}`;
     }).join("");
-    $("#over-foot").innerHTML = `<tr><td>合計</td><td class="n num">${money(sum.start)}</td><td class="n num pos">${signed(sum.dep)}</td><td class="n num">${money(-sum.out)}</td><td class="n num"><strong class="${sum.bal < 0 ? "neg" : ""}">${money(sum.bal)}</strong></td></tr>`;
+    $("#over-foot").innerHTML = `<tr><td>合計</td><td class="n num">${money(sum.start)}</td><td class="n num">${money(-sum.out)}</td><td class="n num"><strong class="${sum.bal < 0 ? "neg" : ""}">${money(sum.bal)}</strong></td></tr>`;
   }
   renderLedgerTable(L);
   renderReceipts();
