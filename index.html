@@ -199,6 +199,10 @@ tr.detail td{background:var(--sunk);padding:8px 10px}
       <div><h2>Gemini AI 設定</h2><p class="sub">金鑰存在你的 Firebase 資料庫，只有你的帳號讀得到，換裝置登入後不用重填。免費方案下 Google 可能用上傳內容改進模型。</p></div>
       <label class="f">API 金鑰<input type="password" id="gkey" autocomplete="off" placeholder="AIza…"></label>
       <label class="f">模型<select id="gmodel"></select></label>
+      <label class="f">辨識模式<select id="gmode">
+        <option value="fast">快速（建議）：少思考、照片較小</option>
+        <option value="careful">仔細：字跡潦草時用，比較慢</option>
+      </select></label>
       <div class="row">
         <button class="btn" id="gload">讀取可用模型</button>
         <button class="btn primary" id="gsave">儲存 AI 設定</button>
@@ -252,8 +256,9 @@ auth.onAuthStateChanged(user => {
   }, denied));
   unsubs.push(fs.doc("config/settings").onSnapshot(s => {
     const d = s.data() || {};
-    settings = { key: d.geminiKey || "", model: d.model || DEFAULT_MODEL };
+    settings = { key: d.geminiKey || "", model: d.model || DEFAULT_MODEL, mode: d.mode === "careful" ? "careful" : "fast" };
     if (!$("#gkey").matches(":focus")) $("#gkey").value = settings.key;
+    $("#gmode").value = settings.mode;
     fillModels([settings.model]); render();
   }, denied));
   unsubs.push(fs.collection("receipts").orderBy("createdAt", "desc").limit(1000).onSnapshot(s => {
@@ -319,12 +324,12 @@ $("#manual").onclick = () => startDraft(null);
 
 async function startDraft(file){
   if (file && !file.type.startsWith("image/")) { toast("請選擇照片檔"); return; }
-  let hash = null, aiImg = null, keepImg = null;
+  let hash = null, aiImg = null, fastImg = null, keepImg = null;
   if (file) {
-    try { [hash, aiImg, keepImg] = await Promise.all([sha256(file), toJpeg(file, 1800, .88), toJpeg(file, 1200, .7)]); }
+    try { [hash, aiImg, fastImg, keepImg] = await Promise.all([sha256(file), toJpeg(file, 1800, .88), toJpeg(file, 1280, .85), toJpeg(file, 1200, .7)]); }
     catch { toast("這張照片無法讀取，請換一張（iPhone 的 HEIC 可改用「最相容」格式拍攝）"); return; }
   }
-  draft = { rid: "r" + uid(), hasPhoto: !!file, hash, aiImg, keepImg, date: today(), rows: [], rtotal: "", aiDone: false, active: null };
+  draft = { rid: "r" + uid(), hasPhoto: !!file, hash, aiImg, fastImg, keepImg, date: today(), rows: [], rtotal: "", aiDone: false, active: null };
   if (!file) draft.rows.push(blankRow());
   $("#verified").checked = false; $("#date").value = draft.date; $("#rtotal").value = "";
   $("#ai-status").textContent = ""; $("#ai-note").hidden = true;
@@ -365,16 +370,32 @@ function parseJson(text){
   if (a >= 0 && b > a) try { return JSON.parse(text.slice(a, b + 1)); } catch {}
   return null;
 }
+// Thinking settings to try, fastest first. Models that reject one fall through to the next.
+let thinkingOk = {};   // model -> index of the setting that worked
+function thinkingOptions(model, mode){
+  if (mode === "careful") return [null];
+  if (/gemini-2\./.test(model)) return [{ thinkingBudget: 0 }, { thinkingBudget: 512 }, null];
+  return [{ thinkingLevel: "low" }, { thinkingBudget: 512 }, null];
+}
 async function callGemini(prompt, dataUrl, signal){
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(settings.model)}:generateContent`;
-  const res = await fetch(url, { method: "POST", signal,
-    headers: { "Content-Type": "application/json", "x-goog-api-key": settings.key },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [ { inline_data: { mime_type: "image/jpeg", data: dataUrl.split(",")[1] } }, { text: prompt } ] }],
-      generationConfig: { temperature: 0, responseMimeType: "application/json" }
-    })
-  });
-  const body = await res.json().catch(() => ({}));
+  const opts = thinkingOptions(settings.model, settings.mode);
+  let i = Math.min(thinkingOk[settings.model] ?? 0, opts.length - 1), res, body;
+  for (; i < opts.length; i++) {
+    const generationConfig = { temperature: 0, responseMimeType: "application/json" };
+    if (opts[i]) generationConfig.thinkingConfig = opts[i];
+    res = await fetch(url, { method: "POST", signal,
+      headers: { "Content-Type": "application/json", "x-goog-api-key": settings.key },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [ { inline_data: { mime_type: "image/jpeg", data: dataUrl.split(",")[1] } }, { text: prompt } ] }],
+        generationConfig
+      })
+    });
+    body = await res.json().catch(() => ({}));
+    const thinkingRejected = res.status === 400 && opts[i] && /think/i.test(body?.error?.message || "");
+    if (!thinkingRejected) break;
+  }
+  if (res.ok) thinkingOk[settings.model] = i;
   if (!res.ok) { const e = new Error(body?.error?.message || res.statusText); e.status = res.status; throw e; }
   const parts = body?.candidates?.[0]?.content?.parts || [];
   const text = parts.filter(p => !p.thought).map(p => p.text || "").join("");
@@ -389,10 +410,12 @@ async function recognize(){
   if (!people.length) { toast("請先到設定新增人員與簡稱"); return; }
   ctl = new AbortController();
   $("#recognize").disabled = true; $("#stop").hidden = false;
-  $("#ai-status").textContent = "Gemini 辨識中…";
-  const d = draft;
+  const d = draft, t0 = Date.now();
+  const tick = () => { $("#ai-status").textContent = `Gemini 辨識中… ${Math.round((Date.now() - t0) / 1000)} 秒`; };
+  tick(); const timer = setInterval(tick, 1000);
   try {
-    const text = await callGemini(buildPrompt(), d.aiImg, ctl.signal);
+    const text = await callGemini(buildPrompt(), settings.mode === "careful" ? d.aiImg : d.fastImg, ctl.signal);
+    clearInterval(timer);
     const res = parseJson(text);
     if (!res) throw Object.assign(new Error("bad json"), { status: -1 });
     if (draft !== d) return;
@@ -407,10 +430,12 @@ async function recognize(){
     const rt = toAmount(res.receipt_total);
     d.rtotal = rt == null ? "" : String(rt); $("#rtotal").value = d.rtotal;
     d.aiDone = true;
-    $("#ai-status").textContent = d.rows.length ? `讀到 ${d.rows.length} 行，請逐行核對` : "沒有讀到明細行，請手動新增";
+    const secs = Math.round((Date.now() - t0) / 1000);
+    $("#ai-status").textContent = d.rows.length ? `${secs} 秒讀到 ${d.rows.length} 行，請逐行核對` : "沒有讀到明細行，請手動新增";
     const note = String(res.notes ?? "").trim();
     $("#ai-note").textContent = note ? "AI 備註：" + note : ""; $("#ai-note").hidden = !note;
   } catch (e) {
+    clearInterval(timer);
     let m;
     if (e.name === "AbortError") m = "已停止辨識";
     else if (e.status === 429) m = "Gemini 免費額度暫時用完，請過一會兒再試，或先手動輸入";
@@ -448,8 +473,8 @@ $("#gload").onclick = async () => {
   } catch (e) { $("#gstate").textContent = "金鑰檢查失敗：" + e.message; }
 };
 $("#gsave").onclick = async () => {
-  const key = $("#gkey").value.trim(), model = $("#gmodel").value || DEFAULT_MODEL;
-  try { await fs.doc("config/settings").set({ geminiKey: key, model, updatedAt: new Date().toISOString() }); $("#gstate").textContent = "已儲存"; toast("AI 設定已儲存"); }
+  const key = $("#gkey").value.trim(), model = $("#gmodel").value || DEFAULT_MODEL, mode = $("#gmode").value;
+  try { await fs.doc("config/settings").set({ geminiKey: key, model, mode, updatedAt: new Date().toISOString() }); $("#gstate").textContent = "已儲存"; toast("AI 設定已儲存"); }
   catch (e) { $("#gstate").textContent = "儲存失敗：" + e.code; }
 };
 
