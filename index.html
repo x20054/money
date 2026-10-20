@@ -968,8 +968,8 @@ async function exportExcel(start, end, byMonth, stateEl){
   const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet("餐費紀錄");
   const font = { name: "新細明體", size: 12 };
   const n = xp.length, lastCol = n + 1;
-  ws.getColumn(1).width = 18;
-  for (let j = 2; j <= lastCol; j++) ws.getColumn(j).width = 11;
+  ws.getColumn(1).width = 16;
+  for (let j = 2; j <= lastCol; j++) ws.getColumn(j).width = 19;
 
   // 第 1 列：姓名
   ws.getRow(1).values = ["項目/金額", ...xp.map(p => p.name)];
@@ -983,21 +983,22 @@ async function exportExcel(start, end, byMonth, stateEl){
     xp.forEach((p, j) => { if (opening[j] || start) ws.getCell(r, j + 2).value = opening[j]; });
     r++;
   }
-  // 同一天的入金放同一列，左欄寫「入金 日期」
-  const byDate = new Map();
-  L.filter(e => e.type === "in").forEach(e => { if (!byDate.has(e.date)) byDate.set(e.date, []); byDate.get(e.date).push(e); });
-  [...byDate.keys()].sort().forEach(date => {
-    ws.getCell(r, 1).value = "入金 " + date.replaceAll("-", "/");
-    xp.forEach((p, j) => {
-      const mine = byDate.get(date).filter(e => e.personId === p.id);
-      if (!mine.length) return;
+  // 入金區：每人的入金在自己那一欄由上往下排，日期跟金額寫在同一格（例如「1000 (2026/10/14)」）。
+  // 用儲存格格式顯示日期，格子裡仍是數字，現餘額的 SUM 公式照常計算。左欄只在第一列寫「入金」。
+  const depFmt = new Map();   // "列,欄" → 數字格式
+  const blocks = xp.map(p => L.filter(e => e.type === "in" && e.personId === p.id));
+  const depRows = Math.max(0, ...blocks.map(b => b.length));
+  for (let i = 0; i < depRows; i++, r++) {
+    if (i === 0) ws.getCell(r, 1).value = "入金";
+    blocks.forEach((b, j) => {
+      const e = b[i]; if (!e) return;
       const c = ws.getCell(r, j + 2);
-      c.value = mine.reduce((s, e) => s + e.amount, 0);
-      const notes = mine.map(e => e.label.replace(/^入金・?/, "")).filter(Boolean);
-      if (notes.length) c.note = notes.join("\n");
+      c.value = e.amount;
+      depFmt.set(r + "," + (j + 2), `0" (${e.date.replaceAll("-", "/")})"`);
+      const note = e.label.replace(/^入金・?/, "");
+      if (note) c.note = note;
     });
-    r++;
-  });
+  }
 
   // 扣款區：依月份或整段分列，每格是該期間的扣款合計
   const outs = L.filter(e => e.type === "out");
@@ -1036,7 +1037,7 @@ async function exportExcel(start, end, byMonth, stateEl){
       const c = row.getCell(j);
       c.font = { ...font, bold: i === balRow };
       c.border = { top: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" }, bottom: { style: i === balRow ? "medium" : "thin" } };
-      if (j > 1 && i > 1) { c.numFmt = i === balRow ? "0;[Red]-0" : "0"; c.alignment = { horizontal: "right", vertical: "middle" }; }
+      if (j > 1 && i > 1) { c.numFmt = i === balRow ? "0;[Red]-0" : (depFmt.get(i + "," + j) || "0"); c.alignment = { horizontal: "right", vertical: "middle" }; }
       else c.alignment = { vertical: "middle" };
     }
   }
