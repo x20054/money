@@ -366,13 +366,13 @@ ${list}
 規則：
 1. 由上到下逐行讀。同一行的簡稱和金額必須一起輸出，不可把上一行的名字配給下一行的金額。
 2. 不要猜。數字只要有不確定（例如 1/7、3/8、0/6、5/6 難分），amount_clear 設 false，並把其他可能的讀法放進 amount_alternatives。完全看不出金額時 amount 設 null。不要依常見價格推測。
-3. alias 照收據上寫的字輸出。看不清楚時 alias_clear 設 false；若字跡最像某個已登記簡稱，可以填那個簡稱，但 alias_clear 仍設 false。不要輸出收據上沒有的行。
+3. aliases 是這一行寫的所有簡稱，照收據上的字輸出成陣列。一行只有一個人時就是 ["明"]。一行寫了多個人共用一個金額（例如「波,柏 95」、「波、柏 95」、「波 柏 95」）時，輸出 ["波","柏"]，amount 填 95，不要拆成多行，也不要自己除以人數。看不清楚時 alias_clear 設 false；若字跡最像某個已登記簡稱，可以填那個簡稱，但 alias_clear 仍設 false。不要輸出收據上沒有的行。
 4. 合計、總計、小計、找零、日期、店名等不是個人明細的行，不要放進 rows。若收據寫了合計金額，填在 receipt_total，否則填 null。
 5. box_2d 是該行（從簡稱到金額）的位置：[ymin, xmin, ymax, xmax]，座標以 0 到 1000 正規化。
 6. amount 是整數新台幣，不含符號。
 
 只回覆一個 JSON 物件，格式如下：
-{"rows":[{"alias":"明","alias_clear":true,"amount":120,"amount_clear":true,"amount_alternatives":[],"raw_text":"明 120","box_2d":[120,80,180,620]}],"receipt_total":390,"notes":"其他需要注意的事，沒有就空字串"}`;
+{"rows":[{"aliases":["明"],"alias_clear":true,"amount":120,"amount_clear":true,"amount_alternatives":[],"raw_text":"明 120","box_2d":[120,80,180,620]},{"aliases":["波","柏"],"alias_clear":true,"amount":95,"amount_clear":true,"amount_alternatives":[],"raw_text":"波,柏 95","box_2d":[190,80,250,620]}],"receipt_total":310,"notes":"其他需要注意的事，沒有就空字串"}`;
 }
 function parseJson(text){
   try { return JSON.parse(text); } catch {}
@@ -432,13 +432,16 @@ async function recognize(){
     const res = parseJson(text);
     if (!res) throw Object.assign(new Error("bad json"), { status: -1 });
     if (draft !== d) return;
-    d.rows = (Array.isArray(res.rows) ? res.rows : []).map(r => {
-      const alias = String(r?.alias ?? "").trim().slice(0, 10);
+    // 一行可能有多個簡稱共用一個金額（例如「波,柏 95」）：由程式拆成每人一筆，各扣同樣金額
+    d.rows = (Array.isArray(res.rows) ? res.rows : []).flatMap(r => {
+      let list = Array.isArray(r?.aliases) ? r.aliases : [r?.alias];
+      list = list.flatMap(a => String(a ?? "").split(/[,，、\/／\s]+/)).map(a => a.trim().slice(0, 10)).filter(Boolean);
+      if (!list.length) list = [""];
       const alts = (Array.isArray(r?.amount_alternatives) ? r.amount_alternatives : []).map(toAmount).filter(n => n != null);
-      const amount = toAmount(r?.amount);
-      return { k: uid(), alias, personId: matchAlias(alias), amount,
+      const amount = toAmount(r?.amount), group = list.length > 1 ? list.join("、") : "";
+      return list.map(alias => ({ k: uid(), alias, personId: matchAlias(alias), amount, group,
         aliasClear: r?.alias_clear !== false, amountClear: r?.amount_clear !== false, alts: [...new Set(alts)].filter(n => n !== amount),
-        box: toBox(r?.box_2d), raw: String(r?.raw_text ?? "").slice(0, 60), ok: false, manual: false };
+        box: toBox(r?.box_2d), raw: String(r?.raw_text ?? "").slice(0, 60), ok: false, manual: false }));
     });
     const rt = toAmount(res.receipt_total);
     d.rtotal = rt == null ? "" : String(rt); $("#rtotal").value = d.rtotal;
@@ -526,6 +529,7 @@ function renderLines(){
     return `<div class="line ${st.s}" id="line-${r.k}">
       <div class="row spread"><strong>第 ${i+1} 行${r.alias ? ` · 手寫「${esc(r.alias)}」` : ""}</strong><span class="pill ${st.s}">${label[st.s]}</span></div>
       ${r.raw ? `<div class="hint">AI 讀到：${esc(r.raw)}</div>` : ""}
+      ${r.group ? `<div class="hint">同一行有 ${esc(r.group)}，每人各扣這行的金額</div>` : ""}
       <div class="grid">
         <label class="f">人員<select data-k="${r.k}" data-f="person">${opts}</select></label>
         <label class="f">金額 NT$<input type="number" inputmode="numeric" min="1" step="1" class="num" data-k="${r.k}" data-f="amount" value="${r.amount ?? ""}"></label>
