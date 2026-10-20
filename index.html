@@ -46,8 +46,8 @@ h2{font-size:1.05rem;margin:0;text-wrap:balance}
 .sub{color:var(--muted);font-size:.85rem;margin:0}
 .num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
 header{display:flex;flex-direction:column;gap:12px}
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);background:var(--sunk);border-radius:10px;padding:4px;gap:4px}
-.tabs button{border:0;background:transparent;color:var(--muted);font:500 .92rem var(--f-body);padding:9px 2px;border-radius:7px;cursor:pointer}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--sunk);border-radius:10px;padding:4px;gap:4px}
+.tabs button{border:0;background:transparent;color:var(--muted);font:500 .88rem var(--f-body);padding:9px 0;border-radius:7px;cursor:pointer}
 .tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 section.panel{display:flex;flex-direction:column;gap:14px}
 .box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -109,6 +109,10 @@ tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
 @media (max-width:460px){.pp{grid-template-columns:1fr 64px 1fr}.pp .ops{grid-column:1/-1;justify-content:flex-end}}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:99px;font-size:.9rem;z-index:20;max-width:calc(100% - 32px)}
 .gate{max-width:420px;margin:12vh auto 0}
+.doc{gap:8px;line-height:1.75}
+.doc h3{font-size:.95rem;margin:12px 0 0}
+.doc p,.doc ol,.doc ul{margin:0;max-width:65ch}
+.doc ol,.doc ul{padding-left:1.4em;display:flex;flex-direction:column;gap:6px}
 </style>
 </head>
 <body>
@@ -126,6 +130,7 @@ tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
       <button role="tab" aria-selected="false" data-tab="dep">入金</button>
       <button role="tab" aria-selected="false" data-tab="over">總覽</button>
       <button role="tab" aria-selected="false" data-tab="people">設定</button>
+      <button role="tab" aria-selected="false" data-tab="help">說明</button>
     </nav>
   </header>
 
@@ -264,6 +269,51 @@ tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
         <span class="hint" id="gstate"></span>
       </div>
     </div>
+    <div class="box" id="carry-box">
+      <div><h2>結轉舊紀錄</h2><p class="sub">把結轉日之前的收據、入金和照片移到封存區，每人當天的餘額變成新的起始金額。餘額不會改變，打開帳本也不用再讀舊紀錄。可以復原最近一次結轉。</p></div>
+      <div id="carry-alert"></div>
+      <div id="carry-last"></div>
+      <div id="carry-new">
+        <div class="form">
+          <label class="f">結轉日（這天之前的紀錄會被結轉）<input type="date" id="carry-date"></label>
+        </div>
+        <div id="carry-plan" style="display:flex;flex-direction:column;gap:10px;margin-top:10px"></div>
+      </div>
+      <span class="hint" id="carry-state"></span>
+    </div>
+  </section>
+
+  <!-- 說明 -->
+  <section class="panel" id="p-help" hidden>
+    <article class="box doc">
+      <h2>結轉舊紀錄</h2>
+      <p class="sub">位置：「設定」分頁最下面的「結轉舊紀錄」。</p>
+
+      <h3>結轉的步驟</h3>
+      <ol>
+        <li><strong>選結轉日</strong>：這天之前的紀錄會被結轉。選好後會顯示預覽，包括會封存幾張收據、幾筆入金、幾張照片，以及每個人的起始金額會從多少變成多少。</li>
+        <li><strong>① 下載備份 Excel</strong>：自動匯出結轉日之前的完整紀錄。沒下載備份，下一步的按鈕不能按。</li>
+        <li><strong>② 執行結轉</strong> → <strong>確定結轉</strong></li>
+      </ol>
+
+      <h3>結轉後</h3>
+      <ul>
+        <li>每個人的餘額完全不變，只是起始金額變成結轉日當天的餘額。</li>
+        <li>舊的收據、入金、照片會移到資料庫的封存區，打開帳本時不會讀取，可以省下讀取額度。</li>
+        <li>收據編號會接著往下編，不會從 #001 重新開始。</li>
+      </ul>
+
+      <h3>復原</h3>
+      <p>同一個區塊會顯示「上次結轉」的資訊，按 <strong>「復原上次結轉」</strong> → <strong>「確定復原」</strong>，封存的紀錄和照片就會全部搬回帳本，起始金額也會改回去。結轉之後新記的扣款和入金都會保留，不受影響。</p>
+
+      <h3>要注意的地方</h3>
+      <ul>
+        <li><strong>只能復原最近一次。</strong>做新的結轉時，上一次的封存資料會永久刪除，畫面上也會先提醒你。</li>
+        <li><strong>中途斷線也不會遺失資料。</strong>如果結轉或復原做到一半斷線，回到這裡會看到提示，按「繼續」就會從停下的地方接著做。中斷的這段期間，餘額可能暫時不正確，按繼續做完就會恢復。</li>
+        <li>結轉後，結轉日之前的明細在帳本裡就查不到了，要看請開備份的 Excel，或者先復原。</li>
+        <li>第一次使用時，建議先用一個很早的日期試結轉一次，確認沒問題後再按復原，熟悉一下流程。</li>
+      </ul>
+    </article>
   </section>
   </div>
 </div>
@@ -282,6 +332,7 @@ const DEFAULT_MODEL = "gemini-3.8-flash";
 let fs = null;
 let people = [], receipts = [], deposits = [];
 let settings = { key: "", model: DEFAULT_MODEL, mode: "turbo" };
+let lastReceiptNo = 0, archive = null;
 let peopleEdit = null, draft = null, ctl = null, posting = false, openPerson = null, confirmVoid = null, confirmDepVoid = null;
 const imgCache = new Map(); let openImg = null;
 const unsubs = [];
@@ -326,6 +377,8 @@ auth.onAuthStateChanged(user => {
     if (draft) draft.rows.forEach(r => { if (!r.personId) r.personId = matchAlias(r.alias); });
     showApp(); fillPersonSelects(); render();
   }, denied));
+  unsubs.push(fs.doc("config/counter").onSnapshot(s => { lastReceiptNo = Number((s.data() || {}).lastReceiptNo) || 0; }, denied));
+  unsubs.push(fs.doc("archive/last").onSnapshot(s => { archive = s.exists ? s.data() : null; renderCarry(); }, denied));
   unsubs.push(fs.doc("config/settings").onSnapshot(s => {
     const d = s.data() || {};
     settings = { key: d.geminiKey || "", model: d.model || DEFAULT_MODEL, mode: ["turbo", "fast", "careful"].includes(d.mode) ? d.mode : "turbo" };
@@ -333,11 +386,13 @@ auth.onAuthStateChanged(user => {
     $("#gmode").value = settings.mode;
     fillModels([settings.model]); render();
   }, denied));
-  unsubs.push(fs.collection("receipts").orderBy("createdAt", "desc").limit(1000).onSnapshot(s => {
-    receipts = s.docs.map(d => ({id: d.id, ...d.data()})); render();
+  // 讀取全部紀錄（不設筆數上限，也不用 orderBy，避免缺欄位的文件被排除），在程式裡排序
+  const newestFirst = (a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+  unsubs.push(fs.collection("receipts").onSnapshot(s => {
+    receipts = s.docs.map(d => ({id: d.id, ...d.data()})).sort(newestFirst); render();
   }, denied));
-  unsubs.push(fs.collection("deposits").orderBy("createdAt", "desc").limit(1000).onSnapshot(s => {
-    deposits = s.docs.map(d => ({id: d.id, ...d.data()})); render();
+  unsubs.push(fs.collection("deposits").onSnapshot(s => {
+    deposits = s.docs.map(d => ({id: d.id, ...d.data()})).sort(newestFirst); render();
   }, denied));
 });
 function showApp(){ $("#gate").hidden = true; $("#app").hidden = false; $("#tabs").hidden = false; }
@@ -346,7 +401,7 @@ function showApp(){ $("#gate").hidden = true; $("#app").hidden = false; $("#tabs
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
 function showTab(t){
   document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t));
-  ["scan", "dep", "over", "people"].forEach(n => $("#p-" + n).hidden = t !== n);
+  ["scan", "dep", "over", "people", "help"].forEach(n => $("#p-" + n).hidden = t !== n);
   if (t === "people") { peopleEdit = people.map(p => ({...p})); renderPeople(); }
 }
 
@@ -719,10 +774,13 @@ $("#post").onclick = async () => {
       const q = await fs.collection("receipts").where("hash", "==", d.hash).get();
       if (q.docs.some(x => x.data().status === "posted")) { toast("這張照片已經扣款過"); return; }
     }
-    const no = String(receipts.reduce((m, r) => Math.max(m, parseInt(r.no, 10) || 0), 0) + 1).padStart(3, "0");
+    // 收據編號：取「現有收據最大號」和「計數器」較大者 +1，結轉後編號也不會重複
+    const n = Math.max(receipts.reduce((m, r) => Math.max(m, parseInt(r.no, 10) || 0), 0), lastReceiptNo) + 1;
+    const no = String(n).padStart(3, "0");
     const now = new Date().toISOString();
     const batch = fs.batch();
     if (d.keepImg) batch.set(fs.doc("images/" + d.rid), { data: d.keepImg });
+    batch.set(fs.doc("config/counter"), { lastReceiptNo: n }, { merge: true });
     batch.set(ref, {
       no, date: d.date, createdAt: now, hash: d.hash, hasImage: !!d.keepImg, status: "posted",
       total: c.sum, receiptTotal: d.rtotal === "" ? null : toAmount(d.rtotal), aiUsed: d.aiDone, model: d.aiDone ? settings.model : null,
@@ -866,11 +924,12 @@ $("#rc-list").addEventListener("click", async e => {
 
 /* ---------- 匯出 Excel ---------- */
 $("#ex-end").value = today();
-$("#ex-go").onclick = async () => {
-  if (!window.ExcelJS) { $("#ex-state").textContent = "Excel 元件載入失敗，請重新整理後再試"; return; }
-  if (!people.length) { $("#ex-state").textContent = "還沒有人員"; return; }
-  const start = $("#ex-start").value, end = $("#ex-end").value || today(), byMonth = $("#ex-group").value === "month";
-  if (start && start > end) { $("#ex-state").textContent = "起始日期不能晚於結束日期"; return; }
+$("#ex-go").onclick = () => exportExcel($("#ex-start").value, $("#ex-end").value || today(), $("#ex-group").value === "month", $("#ex-state"));
+// 回傳 true 表示已下載
+async function exportExcel(start, end, byMonth, stateEl){
+  if (!window.ExcelJS) { stateEl.textContent = "Excel 元件載入失敗，請重新整理後再試"; return false; }
+  if (!people.length) { stateEl.textContent = "還沒有人員"; return false; }
+  if (start && start > end) { stateEl.textContent = "起始日期不能晚於結束日期"; return false; }
   const all = ledger().filter(e => (e.date || "") <= end);
   const before = start ? all.filter(e => (e.date || "") < start) : [];   // 起始日之前的紀錄併成期初餘額
   const L = start ? all.filter(e => (e.date || "") >= start) : all;
@@ -961,15 +1020,155 @@ $("#ex-go").onclick = async () => {
     const a = document.createElement("a"); a.href = url; a.download = `餐費紀錄本_${start ? start + "_" : ""}${end}.xlsx`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-    $("#ex-state").textContent = `已下載：${start || "從頭"} 到 ${end}`;
-  } catch (e) { $("#ex-state").textContent = "匯出失敗：" + e.message; }
-};
+    stateEl.textContent = `已下載：${start || "從頭"} 到 ${end}`;
+    return true;
+  } catch (e) { stateEl.textContent = "匯出失敗：" + e.message; return false; }
+}
+
+/* ---------- 結轉 ---------- */
+// 做法：舊紀錄「搬」到 archive_receipts / archive_deposits / archive_images，archive/last 記錄這次搬了什麼。
+// 每個步驟都可以重做：中途斷線時，按「繼續」或「復原」都會從停下的地方接著做。
+let carryBusy = false, carryConfirm = null, backupFor = "";
+const strip = o => { const { id, ...rest } = o; return rest; };
+const prevDay = d => { const t = new Date(d + "T12:00:00"); t.setDate(t.getDate() - 1); return t.toLocaleDateString("sv-SE"); };
+const fmtD = d => (d || "").replaceAll("-", "/");
+function carryPlan(cutoff){
+  const rs = receipts.filter(r => (r.date || "") < cutoff), ds = deposits.filter(d => (d.date || "") < cutoff);
+  const deltas = {};
+  rs.forEach(r => r.status === "posted" && (r.rows || []).forEach(x => deltas[x.personId] = (deltas[x.personId] || 0) - (x.amount || 0)));
+  ds.forEach(d => d.status === "posted" && (deltas[d.personId] = (deltas[d.personId] || 0) + (d.amount || 0)));
+  return { rs, ds, deltas, imageIds: rs.filter(r => r.hasImage).map(r => r.id) };
+}
+// 分批寫入（Firestore 每批最多 500 筆寫入）
+async function commitInChunks(ops, size = 200){
+  for (let i = 0; i < ops.length; i += size) { const b = fs.batch(); ops.slice(i, i + size).forEach(f => f(b)); await b.commit(); }
+}
+// 讀出來源文件 → 寫到目的地 → 刪除來源；來源不存在就跳過（可重做）
+async function moveByRead(from, to, ids, label){
+  for (let i = 0; i < ids.length; i += 50) {
+    $("#carry-state").textContent = `${label} ${Math.min(i + 50, ids.length)} / ${ids.length}`;
+    const snaps = await Promise.all(ids.slice(i, i + 50).map(id => fs.doc(from + "/" + id).get()));
+    const b = fs.batch(); let n = 0;
+    snaps.forEach(sn => { if (sn.exists) { b.set(fs.doc(to + "/" + sn.id), sn.data()); b.delete(sn.ref); n++; } });
+    if (n) await b.commit();
+  }
+}
+async function deleteIds(coll, ids){ await commitInChunks(ids.map(id => b => b.delete(fs.doc(coll + "/" + id))), 450); }
+async function purgeArchive(meta){
+  // 先標記「清除中」：清到一半中斷時不能再復原，只能繼續清完
+  if (meta.status !== "purging") await fs.doc("archive/last").update({ status: "purging" });
+  $("#carry-state").textContent = "永久刪除上次結轉的封存資料…";
+  await deleteIds("archive_receipts", meta.receiptIds || []);
+  await deleteIds("archive_deposits", meta.depositIds || []);
+  await deleteIds("archive_images", meta.imageIds || []);
+  await fs.doc("archive/last").delete();
+}
+async function startCarry(cutoff){
+  if (archive && !["done", "purging"].includes(archive.status)) throw new Error("上次的結轉或復原還沒完成");
+  if (archive) await purgeArchive(archive);
+  const plan = carryPlan(cutoff);
+  const meta = { status: "running", cutoff, at: new Date().toISOString(), by: auth.currentUser?.email || "",
+    receiptIds: plan.rs.map(r => r.id), depositIds: plan.ds.map(d => d.id), imageIds: plan.imageIds, deltas: plan.deltas, peopleApplied: false };
+  await fs.doc("archive/last").set(meta);
+  await finishCarry(meta);
+}
+async function finishCarry(meta){
+  await moveByRead("images", "archive_images", meta.imageIds || [], "封存照片");
+  const liveR = new Map(receipts.map(r => [r.id, r])), liveD = new Map(deposits.map(d => [d.id, d]));
+  const ops = [];
+  (meta.receiptIds || []).forEach(id => { const r = liveR.get(id); if (r) ops.push(b => { b.set(fs.doc("archive_receipts/" + id), strip(r)); b.delete(fs.doc("receipts/" + id)); }); });
+  (meta.depositIds || []).forEach(id => { const d = liveD.get(id); if (d) ops.push(b => { b.set(fs.doc("archive_deposits/" + id), strip(d)); b.delete(fs.doc("deposits/" + id)); }); });
+  $("#carry-state").textContent = `封存收據與入金 ${ops.length} 筆…`;
+  await commitInChunks(ops);
+  // 起始金額更新和「完成」標記放在同一批，一定同時成功或同時失敗
+  const b = fs.batch();
+  if (!meta.peopleApplied) {
+    b.set(fs.doc("config/people"), { people: people.map(p => ({ ...p, start: (Number(p.start) || 0) + (meta.deltas[p.id] || 0) })), updatedAt: new Date().toISOString() });
+  }
+  b.update(fs.doc("archive/last"), { peopleApplied: true, status: "done" });
+  await b.commit();
+}
+async function undoCarry(meta){
+  if (meta.status !== "undoing") await fs.doc("archive/last").update({ status: "undoing" });
+  await moveByRead("archive_receipts", "receipts", meta.receiptIds || [], "還原收據");
+  await moveByRead("archive_deposits", "deposits", meta.depositIds || [], "還原入金");
+  await moveByRead("archive_images", "images", meta.imageIds || [], "還原照片");
+  // 起始金額扣回結轉時加上的差額（之後手動改過起始金額也會保留），並刪除結轉紀錄
+  const b = fs.batch();
+  if (meta.peopleApplied) {
+    b.set(fs.doc("config/people"), { people: people.map(p => ({ ...p, start: (Number(p.start) || 0) - (meta.deltas[p.id] || 0) })), updatedAt: new Date().toISOString() });
+  }
+  b.delete(fs.doc("archive/last"));
+  await b.commit();
+}
+async function runCarry(job, doneMsg){
+  if (carryBusy) return;
+  carryBusy = true; carryConfirm = null; renderCarry();
+  try { await job(); $("#carry-state").textContent = ""; toast(doneMsg); }
+  catch (e) { $("#carry-state").textContent = "中斷了：" + (e.code || e.message) + "。資料不會遺失，請按「繼續」或「復原」接著做。"; }
+  finally { carryBusy = false; backupFor = ""; renderCarry(); }
+}
+function renderCarry(){
+  if (!$("#carry-box")) return;
+  const dis = carryBusy ? "disabled" : "";
+  // 中斷的狀態
+  if (archive && archive.status === "running") {
+    $("#carry-alert").innerHTML = `<div class="alert warn">結轉到一半中斷了（結轉日 ${fmtD(archive.cutoff)}）。請選擇要繼續完成，或復原回結轉前。</div>
+      <div class="row" style="margin-top:8px"><button class="btn primary" data-c="resume" ${dis}>繼續完成結轉</button><button class="btn" data-c="undo-now" ${dis}>復原</button></div>`;
+  } else if (archive && archive.status === "undoing") {
+    $("#carry-alert").innerHTML = `<div class="alert warn">復原到一半中斷了。請按繼續把它做完。</div>
+      <div class="row" style="margin-top:8px"><button class="btn primary" data-c="undo-now" ${dis}>繼續復原</button></div>`;
+  } else if (archive && archive.status === "purging") {
+    $("#carry-alert").innerHTML = `<div class="alert warn">清除上次的封存資料時中斷了。這份封存已不能復原，請按繼續把它清完。</div>
+      <div class="row" style="margin-top:8px"><button class="btn primary" data-c="purge" ${dis}>繼續清除</button></div>`;
+  } else $("#carry-alert").innerHTML = "";
+  // 上次結轉
+  if (archive && archive.status === "done") {
+    const n = (archive.receiptIds || []).length, m = (archive.depositIds || []).length;
+    const ask = carryConfirm === "undo";
+    $("#carry-last").innerHTML = `<div class="alert info">上次結轉：結轉日 ${fmtD(archive.cutoff)}，封存了 ${n} 張收據、${m} 筆入金（${new Date(archive.at).toLocaleString("zh-TW")}）。</div>
+      <div class="row" style="margin-top:8px">${ask
+        ? `<span class="hint bad">復原後，那些收據與入金會回到帳本，起始金額改回結轉前。</span><button class="btn small danger" data-c="undo-yes" ${dis}>確定復原</button><button class="btn small" data-c="cancel">取消</button>`
+        : `<button class="btn" data-c="undo" ${dis}>復原上次結轉</button>`}</div>`;
+  } else $("#carry-last").innerHTML = "";
+  // 新的結轉
+  const blocked = archive && archive.status !== "done";
+  $("#carry-new").hidden = !!blocked;
+  const cutoff = $("#carry-date").value;
+  if (blocked || !cutoff) { $("#carry-plan").innerHTML = blocked ? "" : `<span class="hint">選一個結轉日，會先顯示預覽。</span>`; return; }
+  const plan = carryPlan(cutoff);
+  if (!plan.rs.length && !plan.ds.length) { $("#carry-plan").innerHTML = `<span class="hint">${fmtD(cutoff)} 之前沒有紀錄，不需要結轉。</span>`; return; }
+  const rows = people.map(p => { const s0 = Number(p.start) || 0, s1 = s0 + (plan.deltas[p.id] || 0); return `<tr><td>${esc(p.name)}</td><td class="n num">${money(s0)}</td><td class="n num"><strong>${money(s1)}</strong></td></tr>`; }).join("");
+  const ready = backupFor === cutoff, ask = carryConfirm === "carry";
+  $("#carry-plan").innerHTML = `
+    <div class="hint">會封存 ${plan.rs.length} 張收據（含 ${plan.imageIds.length} 張照片）、${plan.ds.length} 筆入金。每人的起始金額會變成：</div>
+    <div class="scroll"><table><thead><tr><th>姓名</th><th class="n">目前起始</th><th class="n">結轉後起始</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${archive && archive.status === "done" ? `<div class="alert warn">執行後，上次（${fmtD(archive.cutoff)}）結轉的封存資料會永久刪除，之後只能復原這一次。</div>` : ""}
+    <div class="row"><button class="btn" data-c="backup" ${dis}>① 下載備份 Excel</button><span class="hint">${ready ? "已下載備份" : `匯出 ${fmtD(prevDay(cutoff))} 以前的完整紀錄（不含照片）`}</span></div>
+    <div class="row">${ask
+      ? `<span class="hint bad">確定結轉 ${fmtD(cutoff)} 之前的紀錄？</span><button class="btn small danger" data-c="carry-yes" ${dis}>確定結轉</button><button class="btn small" data-c="cancel">取消</button>`
+      : `<button class="btn primary" data-c="carry" ${ready && !carryBusy ? "" : "disabled"}>② 執行結轉</button>${ready ? "" : `<span class="hint">先下載備份才能結轉</span>`}`}</div>`;
+}
+$("#carry-date").addEventListener("change", () => { carryConfirm = null; renderCarry(); });
+$("#carry-box").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-c]"); if (!b || carryBusy) return;
+  const c = b.dataset.c, cutoff = $("#carry-date").value;
+  if (c === "cancel") { carryConfirm = null; renderCarry(); }
+  if (c === "undo") { carryConfirm = "undo"; renderCarry(); }
+  if (c === "carry") { carryConfirm = "carry"; renderCarry(); }
+  if (c === "backup") { if (await exportExcel("", prevDay(cutoff), true, $("#carry-state"))) { backupFor = cutoff; renderCarry(); } }
+  if (c === "carry-yes") runCarry(() => startCarry(cutoff), `已結轉 ${fmtD(cutoff)} 之前的紀錄`);
+  if (c === "resume") runCarry(() => finishCarry(archive), "結轉完成");
+  if (c === "purge") runCarry(() => purgeArchive(archive), "已清除，可以進行新的結轉");
+  if (c === "undo-yes" || c === "undo-now") runCarry(() => undoCarry(archive), "已復原上次結轉");
+});
 
 /* ---------- 人員 ---------- */
 function usedIds(){
   const s = new Set();
   receipts.forEach(r => (r.rows || []).forEach(x => s.add(x.personId)));
   deposits.forEach(d => s.add(d.personId));
+  Object.keys(archive?.deltas || {}).forEach(id => s.add(id));   // 上次結轉封存的紀錄也算，復原時才不會找不到人
   return s;
 }
 function renderPeople(){
@@ -1016,7 +1215,7 @@ $("#pp-save").onclick = async () => {
 function render(){
   $("#need-people").hidden = !!people.length;
   $("#need-key").hidden = !!settings.key;
-  renderDraft(); renderDeposits(); renderOverview(); depPreview();
+  renderDraft(); renderDeposits(); renderOverview(); depPreview(); renderCarry();
 }
 })();
 </script>
