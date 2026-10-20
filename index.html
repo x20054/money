@@ -144,7 +144,7 @@ tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
     <div class="box" id="upload-box">
       <div class="drop" id="drop">
         <h2>上傳收據照片</h2>
-        <p class="sub">照片橫的也沒關係，系統會自動轉正。拍清楚，手寫數字會比較準。</p>
+        <p class="sub">拍正、拍清楚，手寫數字會比較準。</p>
         <div class="row" style="justify-content:center">
           <label class="btn primary" for="file">拍照或選照片</label>
           <button class="btn" id="manual">不用 AI，手動輸入</button>
@@ -160,11 +160,6 @@ tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
       </div>
       <div id="dup-msg" class="alert bad" hidden></div>
       <div class="photo" id="photo" hidden><img id="img" alt="上傳的收據"></div>
-      <div class="row" id="rotate-row" hidden>
-        <button class="btn small" id="rot-l">↺ 向左轉</button>
-        <button class="btn small" id="rot-r">↻ 向右轉</button>
-        <span class="hint">文字要是正的，AI 才讀得準</span>
-      </div>
       <div class="row">
         <button class="btn primary" id="recognize">AI 辨識</button>
         <button class="btn" id="stop" hidden>停止</button>
@@ -416,15 +411,6 @@ function buildImages(d){
   $("#img").src = d.aiImg;
 }
 async function sha256(file){ try { const b = await crypto.subtle.digest("SHA-256", await file.arrayBuffer()); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,"0")).join(""); } catch { return null; } }
-function rotateDraft(deg){
-  if (!draft?.src) return;
-  draft.rot = (draft.rot + deg + 360) % 360;
-  buildImages(draft);
-  draft.rows.forEach(r => r.box = null);   // 舊框位置已不對
-  renderDraft();
-}
-$("#rot-l").onclick = () => { rotateDraft(-90); $("#ai-status").textContent = "已轉向，按「重新辨識」再讀一次"; };
-$("#rot-r").onclick = () => { rotateDraft(90); $("#ai-status").textContent = "已轉向，按「重新辨識」再讀一次"; };
 
 /* ---------- upload ---------- */
 const drop = $("#drop");
@@ -458,27 +444,21 @@ $("#add-line").onclick = () => { draft.rows.push(blankRow()); renderLines(); ren
 function buildPrompt(){
   const list = people.map(p => `「${p.alias}」= ${p.name}`).join("\n");
   const hint = settings.hint.trim();
-  return `你是手寫帳目辨識助手。圖片是台灣的餐費紀錄，可能是收據、便條紙或筆記本上的手寫繁體中文。照片可能是橫的或倒的。
+  return `你是收據手寫辨識助手。圖片是一張台灣的餐費收據，多半是手寫繁體中文。每一行通常是「人名簡稱 + 金額」，也可能有合計、找零、日期等其他欄位。
 
-已登記的人員簡稱（只有這些人需要記帳）：
+已登記的簡稱：
 ${list}
-${hint ? `\n使用者對這種收據寫法的說明（請優先遵守）：\n${hint}\n` : ""}
-步驟：
-A. 先判斷文字方向：text_top 填文字「上方」朝向圖片哪一邊："up"（正常）、"right"、"down"、"left"。用轉正後的方向來讀內容。
-B. 找出所有出現已登記簡稱的地方，判斷每個簡稱對應的金額。只有含簡稱的行才放進 rows。
-
+${hint ? `\n使用者的補充說明：\n${hint}\n` : ""}
 規則：
-1. 同一筆的簡稱和金額必須一起輸出，不可把上一筆的名字配給下一筆的金額。金額可能寫在名字前面或後面。
-2. 紀錄裡常有日期（例如 10/20）、店名、餐點名、份數、電話或單號，這些都不是人名也不是個人金額，不要當成 rows。
-3. aliases 是這一筆的所有簡稱，輸出成陣列。多個人共用一個金額時（例如「波,柏 95」、「波、柏 95」、「柏浩 95」連在一起寫），輸出 ["波","柏"]、["柏","浩"]，amount 填那個金額，不要自己除以人數。
-4. 簡稱只能從已登記清單裡選。字跡像某個已登記簡稱但不確定時，填那個簡稱並把 alias_clear 設 false。不要創造收據上沒有的筆數。
-5. 不要猜數字。只要有不確定（例如 1/7、3/8、0/6、5/6、9/4 難分），amount_clear 設 false，其他可能讀法放進 amount_alternatives。看不出金額時 amount 設 null。
-6. 合計、總計、小計，或另外用不同顏色、加底線、寫「元」的總金額，填在 receipt_total，不要放進 rows。沒有就填 null。
-7. box_2d 是這一筆在「原始圖片」（未轉正）中的位置：[ymin, xmin, ymax, xmax]，0 到 1000 正規化。
-8. amount 是整數新台幣，不含符號。
+1. 由上到下逐行讀。同一行的簡稱和金額必須一起輸出，不可把上一行的名字配給下一行的金額。
+2. 不要猜。數字只要有不確定（例如 1/7、3/8、0/6、5/6 難分），amount_clear 設 false，並把其他可能的讀法放進 amount_alternatives。完全看不出金額時 amount 設 null。不要依常見價格推測。
+3. aliases 是這一行寫的所有簡稱，照收據上的字輸出成陣列。一行只有一個人時就是 ["明"]。一行寫了多個人共用一個金額（例如「波,柏 95」、「波、柏 95」、「波 柏 95」）時，輸出 ["波","柏"]，amount 填 95，不要拆成多行，也不要自己除以人數。看不清楚時 alias_clear 設 false；若字跡最像某個已登記簡稱，可以填那個簡稱，但 alias_clear 仍設 false。不要輸出收據上沒有的行。
+4. 合計、總計、小計、找零、日期、店名等不是個人明細的行，不要放進 rows。若收據寫了合計金額，填在 receipt_total，否則填 null。
+5. box_2d 是該行（從簡稱到金額）的位置：[ymin, xmin, ymax, xmax]，座標以 0 到 1000 正規化。
+6. amount 是整數新台幣，不含符號。
 
 只回覆一個 JSON 物件，格式如下：
-{"text_top":"up","rows":[{"aliases":["明"],"alias_clear":true,"amount":120,"amount_clear":true,"amount_alternatives":[],"raw_text":"明 120","box_2d":[120,80,180,620]},{"aliases":["波","柏"],"alias_clear":true,"amount":95,"amount_clear":true,"amount_alternatives":[],"raw_text":"波,柏 95","box_2d":[190,80,250,620]}],"receipt_total":310,"notes":"其他需要注意的事，沒有就空字串"}`;
+{"rows":[{"aliases":["明"],"alias_clear":true,"amount":120,"amount_clear":true,"amount_alternatives":[],"raw_text":"明 120","box_2d":[120,80,180,620]},{"aliases":["波","柏"],"alias_clear":true,"amount":95,"amount_clear":true,"amount_alternatives":[],"raw_text":"波,柏 95","box_2d":[190,80,250,620]}],"receipt_total":310,"notes":"其他需要注意的事，沒有就空字串"}`;
 }
 function parseJson(text){
   try { return JSON.parse(text); } catch {}
@@ -519,7 +499,6 @@ async function callGemini(prompt, dataUrl, signal){
   if (!text) { const e = new Error(body?.promptFeedback?.blockReason || body?.candidates?.[0]?.finishReason || "empty"); e.status = 0; throw e; }
   return text;
 }
-const ROT_FOR_TOP = { up: 0, right: 270, down: 180, left: 90 };   // 文字上方朝向 → 轉正需要的順時針角度
 $("#recognize").onclick = () => recognize();
 $("#stop").onclick = () => ctl?.abort();
 async function recognize(isRetry){
@@ -538,9 +517,6 @@ async function recognize(isRetry){
     const res = parseJson(text);
     if (!res) throw Object.assign(new Error("bad json"), { status: -1 });
     if (draft !== d) return;
-    // 照片是橫的或倒的：先轉正再讀一次（只自動做一次）
-    const turn = ROT_FOR_TOP[String(res.text_top || "up").toLowerCase()] || 0;
-    if (turn && !d.autoRotated) { d.autoRotated = true; d.rot = (d.rot + turn) % 360; buildImages(d); rerun = true; return; }
     d.rows = (Array.isArray(res.rows) ? res.rows : []).flatMap(r => {
       let list = Array.isArray(r?.aliases) ? r.aliases : [r?.alias];
       list = list.flatMap(a => String(a ?? "").split(/[,，、\/／\s]+/)).map(a => a.trim().slice(0, 10)).filter(Boolean).flatMap(segmentAliases);
@@ -612,7 +588,7 @@ function renderDraft(){
   const has = !!draft;
   $("#upload-box").hidden = has; $("#draft").hidden = !has;
   if (!has) return;
-  $("#photo").hidden = !draft.hasPhoto; $("#rotate-row").hidden = !draft.hasPhoto;
+  $("#photo").hidden = !draft.hasPhoto;
   $("#recognize").hidden = !draft.hasPhoto;
   $("#recognize").textContent = draft.aiDone ? "重新辨識" : "AI 辨識";
   const dup = draft.hash && receipts.find(r => r.hash === draft.hash && r.status === "posted");
