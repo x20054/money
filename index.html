@@ -86,6 +86,8 @@ table{width:100%;border-collapse:collapse;font-size:.9rem}
 th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line)}
 th{font-size:.75rem;color:var(--muted);font-weight:500;letter-spacing:.06em}
 td.n,th.n{text-align:right}
+.neg{color:var(--bad)}
+tfoot td{border-bottom:0;border-top:2px solid var(--line);font-weight:700}
 tr.person{cursor:pointer}
 tr.detail td{background:var(--sunk);padding:8px 10px}
 .scroll{overflow-x:auto}
@@ -174,10 +176,11 @@ tr.detail td{background:var(--sunk);padding:8px 10px}
   <!-- 總覽 -->
   <section class="panel" id="p-over" hidden>
     <div class="box">
-      <div class="row spread"><h2>每人累計</h2><span class="hint">點姓名看明細</span></div>
+      <div class="row spread"><h2>每人餘額</h2><span class="hint">點姓名看扣款明細</span></div>
       <div class="scroll"><table>
-        <thead><tr><th>姓名</th><th class="n">起始</th><th class="n">新增</th><th class="n">累計</th></tr></thead>
+        <thead><tr><th>姓名</th><th class="n">起始</th><th class="n">已扣</th><th class="n">餘額</th></tr></thead>
         <tbody id="over-body"></tbody>
+        <tfoot id="over-foot"></tfoot>
       </table></div>
     </div>
     <div class="box">
@@ -218,7 +221,14 @@ tr.detail td{background:var(--sunk);padding:8px 10px}
 (() => {
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const money = n => "NT$ " + (Number(n)||0).toLocaleString("zh-TW");
+const money = n => { n = Number(n) || 0; return (n < 0 ? "-" : "") + "NT$ " + Math.abs(n).toLocaleString("zh-TW"); };
+// 每人已扣金額（只算已入帳、未撤銷的收據）
+function spentMap(){
+  const m = new Map();
+  receipts.forEach(r => r.status === "posted" && (r.rows || []).forEach(x => m.set(x.personId, (m.get(x.personId) || 0) + (x.amount || 0))));
+  return m;
+}
+const balanceOf = (p, spent) => (Number(p.start) || 0) - (spent.get(p.id) || 0);
 const today = () => new Date().toLocaleDateString("sv-SE");
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const DEFAULT_MODEL = "gemini-3.8-flash";
@@ -583,8 +593,13 @@ function computeDraft(){
 function renderSummary(){
   if (!draft) return;
   const c = computeDraft();
-  $("#sum").innerHTML = [...c.per].map(([id, v]) => `<div class="r"><span>${esc(personById(id)?.name || "?")}</span><span class="num">${money(v)}</span></div>`).join("")
-    + `<div class="r total"><span>本張合計</span><span class="num">${money(c.sum)}</span></div>`;
+  const spent = spentMap();
+  $("#sum").innerHTML = [...c.per].map(([id, v]) => {
+    const p = personById(id); if (!p) return "";
+    const after = balanceOf(p, spent) - v;
+    return `<div class="r"><span>${esc(p.name)} 扣 <span class="num">${money(v)}</span></span><span class="hint">扣後餘額 <span class="num ${after < 0 ? "neg" : ""}">${money(after)}</span></span></div>`;
+  }).join("")
+    + `<div class="r total"><span>本張合計扣款</span><span class="num">${money(c.sum)}</span></div>`;
   $("#checks").innerHTML = c.issues.map(([t, m]) => `<div class="alert ${t}">${esc(m)}</div>`).join("");
   $("#post").disabled = posting || c.blocked || !$("#verified").checked;
 }
@@ -623,19 +638,22 @@ $("#post").onclick = async () => {
 
 /* ---------- overview ---------- */
 function renderOverview(){
-  const added = new Map(), tx = new Map();
+  const spent = spentMap(), tx = new Map();
   receipts.filter(r => r.status === "posted").forEach(r => (r.rows || []).forEach(x => {
-    added.set(x.personId, (added.get(x.personId) || 0) + (x.amount || 0));
     if (!tx.has(x.personId)) tx.set(x.personId, []);
     tx.get(x.personId).push({ date: r.date, amount: x.amount, no: r.no });
   }));
-  $("#over-body").innerHTML = !people.length ? `<tr><td colspan="4" class="empty">還沒有人員。到「設定」新增後，累計餐費會列在這裡。</td></tr>`
+  $("#over-body").innerHTML = !people.length ? `<tr><td colspan="4" class="empty">還沒有人員。到「設定」新增後，每人餘額會列在這裡。</td></tr>`
   : people.map(p => {
-    const a = added.get(p.id) || 0, s = Number(p.start) || 0;
+    const s = Number(p.start) || 0, a = spent.get(p.id) || 0, bal = s - a;
     const rows = (tx.get(p.id) || []).sort((x, y) => (y.date || "").localeCompare(x.date || ""));
-    const det = openPerson === p.id ? `<tr class="detail"><td colspan="4">${rows.length ? rows.map(t => `<div class="row spread"><span>${esc(t.date)} · 收據 #${esc(t.no)}</span><span class="num">${money(t.amount)}</span></div>`).join("") : `<span class="hint">還沒有交易</span>`}</td></tr>` : "";
-    return `<tr class="person" data-p="${esc(p.id)}"><td>${esc(p.name)} <span class="hint">（${esc(p.alias)}）</span></td><td class="n num">${money(s)}</td><td class="n num">${money(a)}</td><td class="n num"><strong>${money(s + a)}</strong></td></tr>${det}`;
+    const det = openPerson === p.id ? `<tr class="detail"><td colspan="4">${rows.length ? rows.map(t => `<div class="row spread"><span>${esc(t.date)} · 收據 #${esc(t.no)}</span><span class="num">${money(-t.amount)}</span></div>`).join("") : `<span class="hint">還沒有扣款</span>`}</td></tr>` : "";
+    return `<tr class="person" data-p="${esc(p.id)}"><td>${esc(p.name)} <span class="hint">（${esc(p.alias)}）</span></td><td class="n num">${money(s)}</td><td class="n num">${money(-a)}</td><td class="n num"><strong class="${bal < 0 ? "neg" : ""}">${money(bal)}</strong></td></tr>${det}`;
   }).join("");
+  if (people.length) {
+    const ts = people.reduce((t, p) => t + (Number(p.start) || 0), 0), ta = people.reduce((t, p) => t + (spent.get(p.id) || 0), 0);
+    $("#over-foot").innerHTML = `<tr class="foot"><td>合計</td><td class="n num">${money(ts)}</td><td class="n num">${money(-ta)}</td><td class="n num"><strong class="${ts - ta < 0 ? "neg" : ""}">${money(ts - ta)}</strong></td></tr>`;
+  } else $("#over-foot").innerHTML = "";
 
   $("#rc-list").innerHTML = !receipts.length ? `<div class="empty">入帳的收據會依時間列在這裡，可以看原圖或撤銷。</div>`
   : receipts.map(r => {
@@ -649,7 +667,7 @@ function renderOverview(){
       <div class="row">
         ${r.hasImage ? `<button class="btn small" data-img="${esc(r.id)}">${openImg === r.id ? "收起原圖" : "看原圖"}</button>` : ""}
         ${v ? `<span class="pill bad">已撤銷</span>` : ask
-          ? `<span class="hint bad">撤銷後金額會從累計扣除。</span><button class="btn small danger" data-void="${esc(r.id)}">確定撤銷</button><button class="btn small" data-cancel="1">取消</button>`
+          ? `<span class="hint bad">撤銷後這張扣的金額會退回餘額。</span><button class="btn small danger" data-void="${esc(r.id)}">確定撤銷</button><button class="btn small" data-cancel="1">取消</button>`
           : `<button class="btn small" data-ask="${esc(r.id)}">撤銷</button>`}
       </div></div>`;
   }).join("");
@@ -679,13 +697,13 @@ function renderPeople(){
   $("#pp-list").innerHTML = peopleEdit.length ? peopleEdit.map((p, i) => `<div class="pp">
       <label class="f">姓名<input id="pn-${p.id}" data-i="${i}" data-f="name" value="${esc(p.name)}" maxlength="20"></label>
       <label class="f">簡稱<input id="pa-${p.id}" data-i="${i}" data-f="alias" value="${esc(p.alias)}" maxlength="4"></label>
-      <label class="f">起始餐費<input id="ps-${p.id}" data-i="${i}" data-f="start" type="number" inputmode="numeric" step="1" class="num" value="${esc(p.start ?? 0)}"></label>
+      <label class="f">起始金額<input id="ps-${p.id}" data-i="${i}" data-f="start" type="number" inputmode="numeric" step="1" class="num" value="${esc(p.start ?? 0)}"></label>
       <div class="ops">
         <button class="btn small" data-mv="-1" data-i="${i}" ${i === 0 ? "disabled" : ""} aria-label="上移">↑</button>
         <button class="btn small" data-mv="1" data-i="${i}" ${i === peopleEdit.length - 1 ? "disabled" : ""} aria-label="下移">↓</button>
         <button class="btn small danger" data-del="${i}" ${used.has(p.id) ? "disabled title=\"已有帳，不能刪除\"" : ""}>刪除</button>
       </div></div>`).join("")
-    : `<div class="empty">例如：姓名「王小明」、簡稱「明」、起始餐費 0。</div>`;
+    : `<div class="empty">例如：姓名「王小明」、簡稱「明」、起始金額 10000（預先存入的餐費）。</div>`;
 }
 const dirty = () => $("#pp-state").textContent = "尚未儲存";
 $("#pp-add").onclick = () => { peopleEdit.push({ id: "p" + uid(), name: "", alias: "", start: 0 }); renderPeople(); dirty(); document.getElementById("pn-" + peopleEdit.at(-1).id)?.focus(); };
@@ -703,7 +721,7 @@ $("#pp-save").onclick = async () => {
     if (!p.alias) errs.push(`第 ${i+1} 位沒有簡稱`);
     else if (seen.has(p.alias)) errs.push(`簡稱「${p.alias}」重複了（${seen.get(p.alias)} 和 ${p.name}）`);
     else seen.set(p.alias, p.name);
-    if (!Number.isInteger(p.start)) errs.push(`${p.name || "第 " + (i+1) + " 位"} 的起始餐費要是整數`);
+    if (!Number.isInteger(p.start)) errs.push(`${p.name || "第 " + (i+1) + " 位"} 的起始金額要是整數`);
   });
   $("#pp-err").hidden = !errs.length; $("#pp-err").textContent = errs.join("；");
   if (errs.length) return;
