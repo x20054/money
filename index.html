@@ -39,23 +39,25 @@ html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
 img{max-width:100%}
 [hidden]{display:none!important}
-.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;display:flex;flex-direction:column;gap:18px}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;display:flex;flex-direction:column;gap:18px}
 h1{font-family:var(--f-display);font-size:1.6rem;margin:0;letter-spacing:.04em}
 h2{font-size:1.05rem;margin:0;text-wrap:balance}
 .sub{color:var(--muted);font-size:.85rem;margin:0}
 .num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
 header{display:flex;flex-direction:column;gap:12px}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);background:var(--sunk);border-radius:10px;padding:4px;gap:4px}
-.tabs button{border:0;background:transparent;color:var(--muted);font:500 .92rem var(--f-body);padding:9px 4px;border-radius:7px;cursor:pointer}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);background:var(--sunk);border-radius:10px;padding:4px;gap:4px}
+.tabs button{border:0;background:transparent;color:var(--muted);font:500 .92rem var(--f-body);padding:9px 2px;border-radius:7px;cursor:pointer}
 .tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 section.panel{display:flex;flex-direction:column;gap:14px}
 .box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .spread{justify-content:space-between}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end}
 label.f{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted);min-width:0}
-input,select{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
-input:focus-visible,select:focus-visible,button:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.btn{display:inline-block;font:500 .92rem var(--f-body);border-radius:8px;padding:9px 14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+textarea{min-height:110px;resize:vertical;line-height:1.5}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{display:inline-block;font:500 .92rem var(--f-body);border-radius:8px;padding:9px 14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;text-align:center}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.danger{color:var(--bad);border-color:var(--bad)}
 .btn.small{padding:5px 10px;font-size:.82rem}
@@ -69,6 +71,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .hl span{position:absolute;top:-1px;left:-1px;font:600 .7rem var(--f-num);padding:0 4px;color:var(--ink);background:var(--surface);border-radius:3px}
 .pill{font-size:.75rem;font-weight:500;padding:2px 9px;border-radius:99px;white-space:nowrap}
 .pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.in{background:var(--ok-soft);color:var(--ok)} .pill.out{background:var(--sunk);color:var(--muted)}
 .line{border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
 .line.warn{border-left-color:var(--warn)} .line.bad{border-left-color:var(--bad)}
 .line .grid{display:grid;grid-template-columns:1fr 120px;gap:8px}
@@ -76,20 +79,23 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .hint.warn{color:var(--warn)} .hint.bad{color:var(--bad)}
 canvas.crop{max-width:100%;border-radius:6px;border:1px solid var(--line);background:#fff}
 .sum{display:flex;flex-direction:column;gap:6px}
-.sum .r{display:flex;justify-content:space-between;gap:10px}
+.sum .r{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .sum .r.total{border-top:1px solid var(--line);padding-top:8px;font-weight:700}
 .alert{border-radius:8px;padding:10px 12px;font-size:.88rem}
 .alert.bad{background:var(--bad-soft);color:var(--bad)} .alert.warn{background:var(--warn-soft);color:var(--warn)} .alert.ok{background:var(--ok-soft);color:var(--ok)} .alert.info{background:var(--accent-soft);color:var(--ink)}
 .check{display:flex;gap:8px;align-items:flex-start;font-size:.92rem}
 .check input{width:20px;height:20px;margin-top:2px}
 table{width:100%;border-collapse:collapse;font-size:.9rem}
-th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line)}
+th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.wrap{white-space:normal;min-width:120px}
 th{font-size:.75rem;color:var(--muted);font-weight:500;letter-spacing:.06em}
 td.n,th.n{text-align:right}
-.neg{color:var(--bad)}
+.neg{color:var(--bad)} .pos{color:var(--ok)}
 tfoot td{border-bottom:0;border-top:2px solid var(--line);font-weight:700}
 tr.person{cursor:pointer}
-tr.detail td{background:var(--sunk);padding:8px 10px}
+tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
+.tl{display:grid;grid-template-columns:auto 1fr auto auto;gap:4px 10px;font-size:.85rem;align-items:baseline}
+.tl .bal{color:var(--muted)}
 .scroll{overflow-x:auto}
 .empty{color:var(--muted);text-align:center;padding:18px 8px;font-size:.9rem}
 .rc{display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--line);padding-block:10px}
@@ -110,18 +116,18 @@ tr.detail td{background:var(--sunk);padding:8px 10px}
     <div class="row spread">
       <div>
         <h1>餐費帳本</h1>
-        <p class="sub">拍收據，Gemini 讀出每行簡稱與金額，你核對後入帳。</p>
+        <p class="sub">拍收據，Gemini 讀出每行簡稱與金額，你核對後扣款。</p>
       </div>
       <button class="btn small" id="signout" hidden>登出</button>
     </div>
     <nav class="tabs" role="tablist" id="tabs" hidden>
-      <button role="tab" aria-selected="true" data-tab="scan">辨識入帳</button>
-      <button role="tab" aria-selected="false" data-tab="over">餐費總覽</button>
+      <button role="tab" aria-selected="true" data-tab="scan">辨識扣款</button>
+      <button role="tab" aria-selected="false" data-tab="dep">入金</button>
+      <button role="tab" aria-selected="false" data-tab="over">總覽</button>
       <button role="tab" aria-selected="false" data-tab="people">設定</button>
     </nav>
   </header>
 
-  <!-- 登入 / 未設定 -->
   <div class="box gate" id="gate">
     <h2 id="gate-title">載入中…</h2>
     <p class="sub" id="gate-msg"></p>
@@ -129,7 +135,8 @@ tr.detail td{background:var(--sunk);padding:8px 10px}
   </div>
 
   <div id="app" hidden style="display:flex;flex-direction:column;gap:18px">
-  <!-- 辨識入帳 -->
+
+  <!-- 辨識扣款 -->
   <section class="panel" id="p-scan">
     <div class="alert info" id="need-people" hidden>還沒有登記人員。請先到「設定」新增姓名與收據上的簡稱。</div>
     <div class="alert warn" id="need-key" hidden>還沒有填 Gemini API 金鑰，AI 辨識無法使用。請到「設定」貼上金鑰，或先手動輸入。</div>
@@ -137,7 +144,7 @@ tr.detail td{background:var(--sunk);padding:8px 10px}
     <div class="box" id="upload-box">
       <div class="drop" id="drop">
         <h2>上傳收據照片</h2>
-        <p class="sub">拍正、拍清楚，手寫數字會比較準。</p>
+        <p class="sub">照片橫的也沒關係，系統會自動轉正。拍清楚，手寫數字會比較準。</p>
         <div class="row" style="justify-content:center">
           <label class="btn primary" for="file">拍照或選照片</label>
           <button class="btn" id="manual">不用 AI，手動輸入</button>
@@ -153,6 +160,11 @@ tr.detail td{background:var(--sunk);padding:8px 10px}
       </div>
       <div id="dup-msg" class="alert bad" hidden></div>
       <div class="photo" id="photo" hidden><img id="img" alt="上傳的收據"></div>
+      <div class="row" id="rotate-row" hidden>
+        <button class="btn small" id="rot-l">↺ 向左轉</button>
+        <button class="btn small" id="rot-r">↻ 向右轉</button>
+        <span class="hint">文字要是正的，AI 才讀得準</span>
+      </div>
       <div class="row">
         <button class="btn primary" id="recognize">AI 辨識</button>
         <button class="btn" id="stop" hidden>停止</button>
@@ -168,19 +180,51 @@ tr.detail td{background:var(--sunk);padding:8px 10px}
         <label class="f" style="max-width:220px">收據上寫的合計（沒有就留空）<input type="number" inputmode="numeric" id="rtotal" min="0" step="1"></label>
         <div id="checks" style="display:flex;flex-direction:column;gap:6px"></div>
         <label class="check"><input type="checkbox" id="verified"> 我已對照原圖，核對過金額與人員</label>
-        <button class="btn primary" id="post">確認入帳</button>
+        <button class="btn primary" id="post">確認扣款</button>
       </div>
+    </div>
+  </section>
+
+  <!-- 入金 -->
+  <section class="panel" id="p-dep" hidden>
+    <div class="box">
+      <div><h2>新增入金</h2><p class="sub">記下誰在哪天存了多少，會自動加進他的餘額。</p></div>
+      <div class="form">
+        <label class="f">人員<select id="dep-person"></select></label>
+        <label class="f">日期<input type="date" id="dep-date"></label>
+        <label class="f">金額 NT$<input type="number" inputmode="numeric" min="1" step="1" class="num" id="dep-amount"></label>
+        <label class="f">備註（可空）<input id="dep-note" maxlength="40" placeholder="例如：現金、轉帳"></label>
+      </div>
+      <div id="dep-err" class="alert bad" hidden></div>
+      <div class="row"><button class="btn primary" id="dep-add">新增入金</button><span class="hint" id="dep-preview"></span></div>
+    </div>
+    <div class="box">
+      <div class="row spread"><h2>入金紀錄</h2><span class="hint">要修改請撤銷後重新新增</span></div>
+      <div id="dep-list"></div>
     </div>
   </section>
 
   <!-- 總覽 -->
   <section class="panel" id="p-over" hidden>
     <div class="box">
-      <div class="row spread"><h2>每人餘額</h2><span class="hint">點姓名看扣款明細</span></div>
+      <div class="row spread"><h2>每人餘額</h2><span class="hint">點姓名看收支明細</span></div>
       <div class="scroll"><table>
-        <thead><tr><th>姓名</th><th class="n">起始</th><th class="n">已扣</th><th class="n">餘額</th></tr></thead>
+        <thead><tr><th>姓名</th><th class="n">起始</th><th class="n">入金</th><th class="n">扣款</th><th class="n">餘額</th></tr></thead>
         <tbody id="over-body"></tbody>
         <tfoot id="over-foot"></tfoot>
+      </table></div>
+    </div>
+    <div class="box">
+      <div><h2>收支總表</h2><p class="sub">所有入金和扣款，可以依人員、月份、類型篩選。</p></div>
+      <div class="form">
+        <label class="f">人員<select id="led-person"></select></label>
+        <label class="f">月份<input type="month" id="led-month"></label>
+        <label class="f">類型<select id="led-type"><option value="">全部</option><option value="in">入金</option><option value="out">扣款</option></select></label>
+      </div>
+      <div class="scroll"><table>
+        <thead><tr><th>日期</th><th>人員</th><th>項目</th><th class="n">金額</th></tr></thead>
+        <tbody id="led-body"></tbody>
+        <tfoot id="led-foot"></tfoot>
       </table></div>
     </div>
     <div class="box">
@@ -192,14 +236,14 @@ tr.detail td{background:var(--sunk);padding:8px 10px}
   <!-- 設定 -->
   <section class="panel" id="p-people" hidden>
     <div class="box">
-      <div><h2>人員與簡稱</h2><p class="sub">簡稱就是收據上手寫的字，每人一個、不能重複。已有帳的人不能刪除。</p></div>
+      <div><h2>人員與簡稱</h2><p class="sub">簡稱就是收據上手寫的字，每人一個、不能重複。起始金額是開始記帳時已有的餘額，之後存錢請用「入金」。已有紀錄的人不能刪除。</p></div>
       <div id="pp-list" style="display:flex;flex-direction:column;gap:10px"></div>
       <div class="row"><button class="btn small" id="pp-add">＋ 新增人員</button></div>
       <div id="pp-err" class="alert bad" hidden></div>
       <div class="row"><button class="btn primary" id="pp-save">儲存人員設定</button><span class="hint" id="pp-state"></span></div>
     </div>
     <div class="box">
-      <div><h2>Gemini AI 設定</h2><p class="sub">金鑰存在你的 Firebase 資料庫，只有你的帳號讀得到，換裝置登入後不用重填。免費方案下 Google 可能用上傳內容改進模型。</p></div>
+      <div><h2>Gemini AI 設定</h2><p class="sub">金鑰存在你的 Firebase 資料庫，只有你的帳號讀得到。免費方案下 Google 可能用上傳內容改進模型。</p></div>
       <label class="f">API 金鑰<input type="password" id="gkey" autocomplete="off" placeholder="AIza…"></label>
       <label class="f">模型<select id="gmodel"></select></label>
       <label class="f">辨識模式<select id="gmode">
@@ -207,6 +251,7 @@ tr.detail td{background:var(--sunk);padding:8px 10px}
         <option value="fast">快速：少思考、照片較小</option>
         <option value="careful">仔細：字跡潦草時用，比較慢</option>
       </select></label>
+      <label class="f">收據寫法說明（給 AI 看，寫得越具體越準）<textarea id="ghint" placeholder="例如：&#10;每筆第一個字是日期或店名，不是人名。&#10;名字可能連在一起寫，例如「柏浩」代表柏和浩兩個人。&#10;綠色筆寫的「285元」是合計。&#10;「一」「三」是份數，不是金額。"></textarea></label>
       <div class="row">
         <button class="btn" id="gload">讀取可用模型</button>
         <button class="btn primary" id="gsave">儲存 AI 設定</button>
@@ -223,25 +268,35 @@ tr.detail td{background:var(--sunk);padding:8px 10px}
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money = n => { n = Number(n) || 0; return (n < 0 ? "-" : "") + "NT$ " + Math.abs(n).toLocaleString("zh-TW"); };
-// 每人已扣金額（只算已入帳、未撤銷的收據）
-function spentMap(){
-  const m = new Map();
-  receipts.forEach(r => r.status === "posted" && (r.rows || []).forEach(x => m.set(x.personId, (m.get(x.personId) || 0) + (x.amount || 0))));
-  return m;
-}
-const balanceOf = (p, spent) => (Number(p.start) || 0) - (spent.get(p.id) || 0);
+const signed = n => (n > 0 ? "+" : "") + money(n);
 const today = () => new Date().toLocaleDateString("sv-SE");
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const DEFAULT_MODEL = "gemini-3.8-flash";
 
 let fs = null;
-let people = [], receipts = [], settings = { key: "", model: DEFAULT_MODEL };
-let peopleEdit = null, draft = null, ctl = null, posting = false, openPerson = null, confirmVoid = null;
+let people = [], receipts = [], deposits = [];
+let settings = { key: "", model: DEFAULT_MODEL, mode: "turbo", hint: "" };
+let peopleEdit = null, draft = null, ctl = null, posting = false, openPerson = null, confirmVoid = null, confirmDepVoid = null;
 const imgCache = new Map(); let openImg = null;
 const unsubs = [];
 
 function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 3500); }
 function gate(title, msg, showSignin){ $("#gate").hidden = false; $("#app").hidden = true; $("#tabs").hidden = true; $("#gate-title").textContent = title; $("#gate-msg").textContent = msg || ""; $("#signin").hidden = !showSignin; }
+
+/* ---------- 帳務計算（全部由程式算） ---------- */
+// 所有有效的收支，一筆一列：入金為正、扣款為負
+function ledger(){
+  const list = [];
+  deposits.forEach(d => d.status === "posted" && list.push({ type: "in", date: d.date, at: d.createdAt, personId: d.personId, amount: d.amount, label: "入金" + (d.note ? "・" + d.note : "") }));
+  receipts.forEach(r => r.status === "posted" && (r.rows || []).forEach(x => list.push({ type: "out", date: r.date, at: r.createdAt, personId: x.personId, amount: -(x.amount || 0), label: "收據 #" + r.no })));
+  return list.sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.at || "").localeCompare(b.at || ""));
+}
+function totalsFor(pid, L){
+  let dep = 0, out = 0;
+  L.forEach(e => { if (e.personId !== pid) return; if (e.type === "in") dep += e.amount; else out -= e.amount; });
+  const p = personById(pid), start = Number(p?.start) || 0;
+  return { start, dep, out, bal: start + dep - out };
+}
 
 /* ---------- Firebase ---------- */
 const cfg = window.FIREBASE_CONFIG || {};
@@ -259,21 +314,25 @@ auth.onAuthStateChanged(user => {
   unsubs.splice(0).forEach(u => u());
   if (!user) { $("#signout").hidden = true; gate("登入", "只有你的 Google 帳號能開啟帳本。", true); return; }
   $("#signout").hidden = false;
-  const denied = e => { if (e.code === "permission-denied") gate("沒有權限", `${user.email} 沒有存取這本帳的權限。請確認 Firestore 規則裡填的是這個信箱。`, false), $("#signout").hidden = false; else toast("資料讀取失敗：" + e.code); };
+  const denied = e => { if (e.code === "permission-denied") { gate("沒有權限", `${user.email} 沒有存取這本帳的權限。請確認 Firestore 規則裡填的是這個信箱。`, false); $("#signout").hidden = false; } else toast("資料讀取失敗：" + e.code); };
   unsubs.push(fs.doc("config/people").onSnapshot(s => {
     people = ((s.data() || {}).people || []).map(p => ({...p}));
     if (draft) draft.rows.forEach(r => { if (!r.personId) r.personId = matchAlias(r.alias); });
-    showApp(); render();
+    showApp(); fillPersonSelects(); render();
   }, denied));
   unsubs.push(fs.doc("config/settings").onSnapshot(s => {
     const d = s.data() || {};
-    settings = { key: d.geminiKey || "", model: d.model || DEFAULT_MODEL, mode: ["turbo", "fast", "careful"].includes(d.mode) ? d.mode : "turbo" };
-    if (!$("#gkey").matches(":focus")) $("#gkey").value = settings.key;
+    settings = { key: d.geminiKey || "", model: d.model || DEFAULT_MODEL, mode: ["turbo", "fast", "careful"].includes(d.mode) ? d.mode : "turbo", hint: d.hint || "" };
+    if (document.activeElement !== $("#gkey")) $("#gkey").value = settings.key;
+    if (document.activeElement !== $("#ghint")) $("#ghint").value = settings.hint;
     $("#gmode").value = settings.mode;
     fillModels([settings.model]); render();
   }, denied));
   unsubs.push(fs.collection("receipts").orderBy("createdAt", "desc").limit(1000).onSnapshot(s => {
     receipts = s.docs.map(d => ({id: d.id, ...d.data()})); render();
+  }, denied));
+  unsubs.push(fs.collection("deposits").orderBy("createdAt", "desc").limit(1000).onSnapshot(s => {
+    deposits = s.docs.map(d => ({id: d.id, ...d.data()})); render();
   }, denied));
 });
 function showApp(){ $("#gate").hidden = true; $("#app").hidden = false; $("#tabs").hidden = false; }
@@ -282,13 +341,28 @@ function showApp(){ $("#gate").hidden = true; $("#app").hidden = false; $("#tabs
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
 function showTab(t){
   document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t));
-  $("#p-scan").hidden = t !== "scan"; $("#p-over").hidden = t !== "over"; $("#p-people").hidden = t !== "people";
+  ["scan", "dep", "over", "people"].forEach(n => $("#p-" + n).hidden = t !== n);
   if (t === "people") { peopleEdit = people.map(p => ({...p})); renderPeople(); }
 }
 
 /* ---------- helpers ---------- */
 const personById = id => people.find(p => p.id === id);
 function matchAlias(a){ a = String(a || "").trim(); if (!a) return ""; const p = people.find(p => p.alias === a); return p ? p.id : ""; }
+// 「柏浩」這種連寫：若整段剛好由已登記簡稱組成，就拆開
+function segmentAliases(token){
+  if (matchAlias(token)) return [token];
+  const al = people.map(p => p.alias).filter(Boolean).sort((a, b) => b.length - a.length);
+  const memo = new Map();
+  const go = i => {
+    if (i === token.length) return [];
+    if (memo.has(i)) return memo.get(i);
+    let res = null;
+    for (const a of al) if (token.startsWith(a, i)) { const rest = go(i + a.length); if (rest) { res = [a, ...rest]; break; } }
+    memo.set(i, res); return res;
+  };
+  const seg = token.length > 1 ? go(0) : null;
+  return seg && seg.length > 1 ? seg : [token];
+}
 function toAmount(v){
   if (typeof v === "number") return Number.isInteger(v) && v > 0 ? v : null;
   if (typeof v === "string" && /^\s*\d+\s*$/.test(v)) { const n = parseInt(v, 10); return n > 0 ? n : null; }
@@ -311,19 +385,46 @@ function rowStatus(r){
   if (r.alts.length) w.push("也可能是 " + r.alts.join("、"));
   return w.length ? {s:"warn", why: w.join("，")} : {s:"ok", why:""};
 }
-const label = {ok:"可入帳", warn:"需核對", bad:"無法辨識"};
+const label = {ok:"可扣款", warn:"需核對", bad:"無法辨識"};
+function fillPersonSelects(){
+  const opts = people.map(p => `<option value="${esc(p.id)}">${esc(p.name)}（${esc(p.alias)}）</option>`).join("");
+  const keep = (sel, html) => { const v = sel.value; sel.innerHTML = html; if ([...sel.options].some(o => o.value === v)) sel.value = v; };
+  keep($("#dep-person"), `<option value="">— 選擇人員 —</option>` + opts);
+  keep($("#led-person"), `<option value="">全部人員</option>` + opts);
+}
 
-/* resize to JPEG with EXIF orientation applied */
-async function toJpeg(file, maxSide, quality){
-  let src;
-  try { src = await createImageBitmap(file, { imageOrientation: "from-image" }); }
-  catch { src = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = URL.createObjectURL(file); }); }
+/* ---------- 照片：讀取、轉向、壓縮 ---------- */
+async function loadSource(file){
+  try { return await createImageBitmap(file, { imageOrientation: "from-image" }); }
+  catch { return await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = URL.createObjectURL(file); }); }
+}
+// rot = 順時針旋轉角度（0/90/180/270）
+function toJpeg(src, rot, maxSide, quality){
   const w = src.width, h = src.height, k = Math.min(1, maxSide / Math.max(w, h));
-  const c = document.createElement("canvas"); c.width = Math.round(w * k); c.height = Math.round(h * k);
-  c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+  const sw = Math.round(w * k), sh = Math.round(h * k), side = rot % 180 !== 0;
+  const c = document.createElement("canvas"); c.width = side ? sh : sw; c.height = side ? sw : sh;
+  const g = c.getContext("2d");
+  g.translate(c.width / 2, c.height / 2); g.rotate(rot * Math.PI / 180);
+  g.drawImage(src, -sw / 2, -sh / 2, sw, sh);
   return c.toDataURL("image/jpeg", quality);
 }
+function buildImages(d){
+  d.aiImg = toJpeg(d.src, d.rot, 1800, .88);
+  d.fastImg = toJpeg(d.src, d.rot, 1280, .85);
+  d.turboImg = toJpeg(d.src, d.rot, 1024, .85);
+  d.keepImg = toJpeg(d.src, d.rot, 1200, .7);
+  $("#img").src = d.aiImg;
+}
 async function sha256(file){ try { const b = await crypto.subtle.digest("SHA-256", await file.arrayBuffer()); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,"0")).join(""); } catch { return null; } }
+function rotateDraft(deg){
+  if (!draft?.src) return;
+  draft.rot = (draft.rot + deg + 360) % 360;
+  buildImages(draft);
+  draft.rows.forEach(r => r.box = null);   // 舊框位置已不對
+  renderDraft();
+}
+$("#rot-l").onclick = () => { rotateDraft(-90); $("#ai-status").textContent = "已轉向，按「重新辨識」再讀一次"; };
+$("#rot-r").onclick = () => { rotateDraft(90); $("#ai-status").textContent = "已轉向，按「重新辨識」再讀一次"; };
 
 /* ---------- upload ---------- */
 const drop = $("#drop");
@@ -335,20 +436,18 @@ $("#manual").onclick = () => startDraft(null);
 
 async function startDraft(file){
   if (file && !file.type.startsWith("image/")) { toast("請選擇照片檔"); return; }
-  let hash = null, aiImg = null, fastImg = null, turboImg = null, keepImg = null;
+  const d = { rid: "r" + uid(), hasPhoto: !!file, hash: null, src: null, rot: 0, autoRotated: false, date: today(), rows: [], rtotal: "", aiDone: false, active: null };
   if (file) {
-    try { [hash, aiImg, fastImg, turboImg, keepImg] = await Promise.all([sha256(file), toJpeg(file, 1800, .88), toJpeg(file, 1280, .85), toJpeg(file, 1024, .85), toJpeg(file, 1200, .7)]); }
+    try { [d.hash, d.src] = await Promise.all([sha256(file), loadSource(file)]); buildImages(d); }
     catch { toast("這張照片無法讀取，請換一張（iPhone 的 HEIC 可改用「最相容」格式拍攝）"); return; }
-  }
-  draft = { rid: "r" + uid(), hasPhoto: !!file, hash, aiImg, fastImg, turboImg, keepImg, date: today(), rows: [], rtotal: "", aiDone: false, active: null };
-  if (!file) draft.rows.push(blankRow());
-  $("#verified").checked = false; $("#date").value = draft.date; $("#rtotal").value = "";
+  } else d.rows.push(blankRow());
+  draft = d;
+  $("#verified").checked = false; $("#date").value = d.date; $("#rtotal").value = "";
   $("#ai-status").textContent = ""; $("#ai-note").hidden = true;
-  if (file) $("#img").src = aiImg;
   render();
   if (file && settings.key && people.length) recognize();
 }
-function blankRow(){ return { k: uid(), alias:"", personId:"", amount:null, aliasClear:true, amountClear:true, alts:[], box:null, raw:"", ok:true, manual:true }; }
+function blankRow(){ return { k: uid(), alias:"", personId:"", amount:null, aliasClear:true, amountClear:true, alts:[], box:null, raw:"", group:"", ok:true, manual:true }; }
 $("#discard").onclick = () => { ctl?.abort(); draft = null; render(); };
 $("#date").onchange = e => { draft.date = e.target.value; renderSummary(); };
 $("#rtotal").oninput = e => { draft.rtotal = e.target.value; renderSummary(); };
@@ -358,21 +457,28 @@ $("#add-line").onclick = () => { draft.rows.push(blankRow()); renderLines(); ren
 /* ---------- Gemini ---------- */
 function buildPrompt(){
   const list = people.map(p => `「${p.alias}」= ${p.name}`).join("\n");
-  return `你是收據手寫辨識助手。圖片是一張台灣的餐費收據，多半是手寫繁體中文。每一行通常是「人名簡稱 + 金額」，也可能有合計、找零、日期等其他欄位。
+  const hint = settings.hint.trim();
+  return `你是手寫帳目辨識助手。圖片是台灣的餐費紀錄，可能是收據、便條紙或筆記本上的手寫繁體中文。照片可能是橫的或倒的。
 
-已登記的簡稱：
+已登記的人員簡稱（只有這些人需要記帳）：
 ${list}
+${hint ? `\n使用者對這種收據寫法的說明（請優先遵守）：\n${hint}\n` : ""}
+步驟：
+A. 先判斷文字方向：text_top 填文字「上方」朝向圖片哪一邊："up"（正常）、"right"、"down"、"left"。用轉正後的方向來讀內容。
+B. 找出所有出現已登記簡稱的地方，判斷每個簡稱對應的金額。只有含簡稱的行才放進 rows。
 
 規則：
-1. 由上到下逐行讀。同一行的簡稱和金額必須一起輸出，不可把上一行的名字配給下一行的金額。
-2. 不要猜。數字只要有不確定（例如 1/7、3/8、0/6、5/6 難分），amount_clear 設 false，並把其他可能的讀法放進 amount_alternatives。完全看不出金額時 amount 設 null。不要依常見價格推測。
-3. aliases 是這一行寫的所有簡稱，照收據上的字輸出成陣列。一行只有一個人時就是 ["明"]。一行寫了多個人共用一個金額（例如「波,柏 95」、「波、柏 95」、「波 柏 95」）時，輸出 ["波","柏"]，amount 填 95，不要拆成多行，也不要自己除以人數。看不清楚時 alias_clear 設 false；若字跡最像某個已登記簡稱，可以填那個簡稱，但 alias_clear 仍設 false。不要輸出收據上沒有的行。
-4. 合計、總計、小計、找零、日期、店名等不是個人明細的行，不要放進 rows。若收據寫了合計金額，填在 receipt_total，否則填 null。
-5. box_2d 是該行（從簡稱到金額）的位置：[ymin, xmin, ymax, xmax]，座標以 0 到 1000 正規化。
-6. amount 是整數新台幣，不含符號。
+1. 同一筆的簡稱和金額必須一起輸出，不可把上一筆的名字配給下一筆的金額。金額可能寫在名字前面或後面。
+2. 紀錄裡常有日期（例如 10/20）、店名、餐點名、份數、電話或單號，這些都不是人名也不是個人金額，不要當成 rows。
+3. aliases 是這一筆的所有簡稱，輸出成陣列。多個人共用一個金額時（例如「波,柏 95」、「波、柏 95」、「柏浩 95」連在一起寫），輸出 ["波","柏"]、["柏","浩"]，amount 填那個金額，不要自己除以人數。
+4. 簡稱只能從已登記清單裡選。字跡像某個已登記簡稱但不確定時，填那個簡稱並把 alias_clear 設 false。不要創造收據上沒有的筆數。
+5. 不要猜數字。只要有不確定（例如 1/7、3/8、0/6、5/6、9/4 難分），amount_clear 設 false，其他可能讀法放進 amount_alternatives。看不出金額時 amount 設 null。
+6. 合計、總計、小計，或另外用不同顏色、加底線、寫「元」的總金額，填在 receipt_total，不要放進 rows。沒有就填 null。
+7. box_2d 是這一筆在「原始圖片」（未轉正）中的位置：[ymin, xmin, ymax, xmax]，0 到 1000 正規化。
+8. amount 是整數新台幣，不含符號。
 
 只回覆一個 JSON 物件，格式如下：
-{"rows":[{"aliases":["明"],"alias_clear":true,"amount":120,"amount_clear":true,"amount_alternatives":[],"raw_text":"明 120","box_2d":[120,80,180,620]},{"aliases":["波","柏"],"alias_clear":true,"amount":95,"amount_clear":true,"amount_alternatives":[],"raw_text":"波,柏 95","box_2d":[190,80,250,620]}],"receipt_total":310,"notes":"其他需要注意的事，沒有就空字串"}`;
+{"text_top":"up","rows":[{"aliases":["明"],"alias_clear":true,"amount":120,"amount_clear":true,"amount_alternatives":[],"raw_text":"明 120","box_2d":[120,80,180,620]},{"aliases":["波","柏"],"alias_clear":true,"amount":95,"amount_clear":true,"amount_alternatives":[],"raw_text":"波,柏 95","box_2d":[190,80,250,620]}],"receipt_total":310,"notes":"其他需要注意的事，沒有就空字串"}`;
 }
 function parseJson(text){
   try { return JSON.parse(text); } catch {}
@@ -381,8 +487,7 @@ function parseJson(text){
   if (a >= 0 && b > a) try { return JSON.parse(text.slice(a, b + 1)); } catch {}
   return null;
 }
-// Thinking settings to try, fastest first. Models that reject one fall through to the next.
-let thinkingOk = {};   // model -> index of the setting that worked
+let thinkingOk = {};
 function thinkingOptions(model, mode){
   if (mode === "careful") return [null];
   if (/gemini-2\./.test(model)) return mode === "turbo" ? [{ thinkingBudget: 0 }, null] : [{ thinkingBudget: 512 }, { thinkingBudget: 0 }, null];
@@ -392,7 +497,7 @@ function thinkingOptions(model, mode){
 async function callGemini(prompt, dataUrl, signal){
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(settings.model)}:generateContent`;
   const opts = thinkingOptions(settings.model, settings.mode);
-  let i = Math.min(thinkingOk[settings.model] ?? 0, opts.length - 1), res, body;
+  let i = Math.min(thinkingOk[settings.model + settings.mode] ?? 0, opts.length - 1), res, body;
   for (; i < opts.length; i++) {
     const generationConfig = { temperature: 0, responseMimeType: "application/json" };
     if (opts[i]) generationConfig.thinkingConfig = opts[i];
@@ -407,23 +512,24 @@ async function callGemini(prompt, dataUrl, signal){
     const thinkingRejected = res.status === 400 && opts[i] && /think/i.test(body?.error?.message || "");
     if (!thinkingRejected) break;
   }
-  if (res.ok) thinkingOk[settings.model] = i;
+  if (res.ok) thinkingOk[settings.model + settings.mode] = i;
   if (!res.ok) { const e = new Error(body?.error?.message || res.statusText); e.status = res.status; throw e; }
   const parts = body?.candidates?.[0]?.content?.parts || [];
   const text = parts.filter(p => !p.thought).map(p => p.text || "").join("");
   if (!text) { const e = new Error(body?.promptFeedback?.blockReason || body?.candidates?.[0]?.finishReason || "empty"); e.status = 0; throw e; }
   return text;
 }
-$("#recognize").onclick = recognize;
+const ROT_FOR_TOP = { up: 0, right: 270, down: 180, left: 90 };   // 文字上方朝向 → 轉正需要的順時針角度
+$("#recognize").onclick = () => recognize();
 $("#stop").onclick = () => ctl?.abort();
-async function recognize(){
+async function recognize(isRetry){
   if (!draft?.hasPhoto) return;
   if (!settings.key) { toast("請先到設定填 Gemini API 金鑰"); return; }
   if (!people.length) { toast("請先到設定新增人員與簡稱"); return; }
   ctl = new AbortController();
   $("#recognize").disabled = true; $("#stop").hidden = false;
-  const d = draft, t0 = Date.now();
-  const tick = () => { $("#ai-status").textContent = `Gemini 辨識中… ${Math.round((Date.now() - t0) / 1000)} 秒`; };
+  const d = draft, t0 = Date.now(); let rerun = false;
+  const tick = () => { $("#ai-status").textContent = (isRetry ? "已自動轉正，重新辨識中… " : "Gemini 辨識中… ") + Math.round((Date.now() - t0) / 1000) + " 秒"; };
   tick(); const timer = setInterval(tick, 1000);
   try {
     const img = settings.mode === "careful" ? d.aiImg : settings.mode === "fast" ? d.fastImg : d.turboImg;
@@ -432,10 +538,12 @@ async function recognize(){
     const res = parseJson(text);
     if (!res) throw Object.assign(new Error("bad json"), { status: -1 });
     if (draft !== d) return;
-    // 一行可能有多個簡稱共用一個金額（例如「波,柏 95」）：由程式拆成每人一筆，各扣同樣金額
+    // 照片是橫的或倒的：先轉正再讀一次（只自動做一次）
+    const turn = ROT_FOR_TOP[String(res.text_top || "up").toLowerCase()] || 0;
+    if (turn && !d.autoRotated) { d.autoRotated = true; d.rot = (d.rot + turn) % 360; buildImages(d); rerun = true; return; }
     d.rows = (Array.isArray(res.rows) ? res.rows : []).flatMap(r => {
       let list = Array.isArray(r?.aliases) ? r.aliases : [r?.alias];
-      list = list.flatMap(a => String(a ?? "").split(/[,，、\/／\s]+/)).map(a => a.trim().slice(0, 10)).filter(Boolean);
+      list = list.flatMap(a => String(a ?? "").split(/[,，、\/／\s]+/)).map(a => a.trim().slice(0, 10)).filter(Boolean).flatMap(segmentAliases);
       if (!list.length) list = [""];
       const alts = (Array.isArray(r?.amount_alternatives) ? r.amount_alternatives : []).map(toAmount).filter(n => n != null);
       const amount = toAmount(r?.amount), group = list.length > 1 ? list.join("、") : "";
@@ -448,7 +556,7 @@ async function recognize(){
     d.aiDone = true;
     const secs = Math.round((Date.now() - t0) / 1000);
     const modeName = { turbo: "極速", fast: "快速", careful: "仔細" }[settings.mode];
-    $("#ai-status").textContent = (d.rows.length ? `${secs} 秒讀到 ${d.rows.length} 行，請逐行核對` : `${secs} 秒，沒有讀到明細行，請手動新增`) + `（${settings.model} · ${modeName}）`;
+    $("#ai-status").textContent = (d.rows.length ? `${secs} 秒讀到 ${d.rows.length} 筆，請逐筆核對` : `${secs} 秒，沒有讀到明細，請手動新增`) + `（${settings.model} · ${modeName}）`;
     const note = String(res.notes ?? "").trim();
     $("#ai-note").textContent = note ? "AI 備註：" + note : ""; $("#ai-note").hidden = !note;
   } catch (e) {
@@ -465,7 +573,11 @@ async function recognize(){
     $("#ai-status").textContent = m;
   } finally {
     $("#recognize").disabled = false; $("#stop").hidden = true; ctl = null;
-    if (draft === d) { if (!d.rows.length) d.rows.push(blankRow()); renderDraft(); }
+    if (draft === d) {
+      if (rerun) { renderDraft(); recognize(true); return; }
+      if (!d.rows.length) d.rows.push(blankRow());
+      renderDraft();
+    }
   }
 }
 
@@ -490,8 +602,8 @@ $("#gload").onclick = async () => {
   } catch (e) { $("#gstate").textContent = "金鑰檢查失敗：" + e.message; }
 };
 $("#gsave").onclick = async () => {
-  const key = $("#gkey").value.trim(), model = $("#gmodel").value || DEFAULT_MODEL, mode = $("#gmode").value;
-  try { await fs.doc("config/settings").set({ geminiKey: key, model, mode, updatedAt: new Date().toISOString() }); $("#gstate").textContent = "已儲存"; toast("AI 設定已儲存"); }
+  const data = { geminiKey: $("#gkey").value.trim(), model: $("#gmodel").value || DEFAULT_MODEL, mode: $("#gmode").value, hint: $("#ghint").value.slice(0, 2000), updatedAt: new Date().toISOString() };
+  try { await fs.doc("config/settings").set(data); $("#gstate").textContent = "已儲存"; toast("AI 設定已儲存"); }
   catch (e) { $("#gstate").textContent = "儲存失敗：" + e.code; }
 };
 
@@ -500,20 +612,22 @@ function renderDraft(){
   const has = !!draft;
   $("#upload-box").hidden = has; $("#draft").hidden = !has;
   if (!has) return;
-  $("#photo").hidden = !draft.hasPhoto;
+  $("#photo").hidden = !draft.hasPhoto; $("#rotate-row").hidden = !draft.hasPhoto;
   $("#recognize").hidden = !draft.hasPhoto;
   $("#recognize").textContent = draft.aiDone ? "重新辨識" : "AI 辨識";
   const dup = draft.hash && receipts.find(r => r.hash === draft.hash && r.status === "posted");
   draft.dup = dup || null;
   $("#dup-msg").hidden = !dup;
-  if (dup) $("#dup-msg").textContent = `這張照片已在 ${dup.date} 入帳過（收據 #${dup.no}）。若要重記，請先到總覽撤銷那張。`;
+  if (dup) $("#dup-msg").textContent = `這張照片已在 ${dup.date} 扣款過（收據 #${dup.no}）。若要重記，請先到總覽撤銷那張。`;
   renderLines(); renderBoxes(); renderSummary();
 }
 function renderBoxes(){
   document.querySelectorAll("#photo .hl").forEach(n => n.remove());
   if (!draft?.hasPhoto) return;
+  const seen = new Set();
   draft.rows.forEach((r, i) => {
     if (!r.box) return;
+    const key = r.box.join(","); if (seen.has(key)) return; seen.add(key);   // 同一行多人只畫一個框
     const [x1,y1,x2,y2] = r.box, el = document.createElement("div");
     el.className = "hl " + rowStatus(r).s + (draft.active === r.k ? " active" : "");
     Object.assign(el.style, { left: x1/10 + "%", top: y1/10 + "%", width: (x2-x1)/10 + "%", height: (y2-y1)/10 + "%" });
@@ -527,9 +641,9 @@ function renderLines(){
   $("#lines").innerHTML = draft.rows.map((r, i) => {
     const st = rowStatus(r);
     return `<div class="line ${st.s}" id="line-${r.k}">
-      <div class="row spread"><strong>第 ${i+1} 行${r.alias ? ` · 手寫「${esc(r.alias)}」` : ""}</strong><span class="pill ${st.s}">${label[st.s]}</span></div>
+      <div class="row spread"><strong>第 ${i+1} 筆${r.alias ? ` · 手寫「${esc(r.alias)}」` : ""}</strong><span class="pill ${st.s}">${label[st.s]}</span></div>
       ${r.raw ? `<div class="hint">AI 讀到：${esc(r.raw)}</div>` : ""}
-      ${r.group ? `<div class="hint">同一行有 ${esc(r.group)}，每人各扣這行的金額</div>` : ""}
+      ${r.group ? `<div class="hint">同一筆有 ${esc(r.group)}，每人各扣這筆的金額</div>` : ""}
       <div class="grid">
         <label class="f">人員<select data-k="${r.k}" data-f="person">${opts}</select></label>
         <label class="f">金額 NT$<input type="number" inputmode="numeric" min="1" step="1" class="num" data-k="${r.k}" data-f="amount" value="${r.amount ?? ""}"></label>
@@ -537,9 +651,9 @@ function renderLines(){
       ${st.why ? `<div class="hint ${st.s === "ok" ? "" : st.s}">${esc(st.why)}</div>` : ""}
       <canvas class="crop" id="crop-${r.k}" hidden></canvas>
       <div class="row">
-        ${draft.hasPhoto ? `<button class="btn small" data-k="${r.k}" data-a="crop">${r.box ? "放大原圖這行" : "看整張原圖"}</button>` : ""}
+        ${draft.hasPhoto ? `<button class="btn small" data-k="${r.k}" data-a="crop">${r.box ? "放大原圖這筆" : "看整張原圖"}</button>` : ""}
         ${st.s === "warn" ? `<button class="btn small" data-k="${r.k}" data-a="ok">已核對，正確</button>` : ""}
-        <button class="btn small danger" data-k="${r.k}" data-a="del">刪除此行</button>
+        <button class="btn small danger" data-k="${r.k}" data-a="del">刪除此筆</button>
       </div>
     </div>`;
   }).join("");
@@ -586,44 +700,42 @@ function computeDraft(){
   const sts = draft.rows.map(rowStatus);
   draft.rows.forEach(r => { if (r.personId && r.amount != null) { per.set(r.personId, (per.get(r.personId) || 0) + r.amount); sum += r.amount; } });
   const issues = [];
-  if (!draft.rows.length) issues.push(["bad", "至少要有一行明細"]);
+  if (!draft.rows.length) issues.push(["bad", "至少要有一筆明細"]);
   const bad = sts.filter(s => s.s === "bad").length, warn = sts.filter(s => s.s === "warn").length;
-  if (bad) issues.push(["bad", `${bad} 行還沒有人員或金額`]);
-  if (warn) issues.push(["warn", `${warn} 行需要對照原圖核對`]);
+  if (bad) issues.push(["bad", `${bad} 筆還沒有人員或金額`]);
+  if (warn) issues.push(["warn", `${warn} 筆需要對照原圖核對`]);
   const rt = draft.rtotal === "" ? null : toAmount(draft.rtotal);
   if (draft.rtotal !== "" && rt == null) issues.push(["bad", "收據合計不是有效金額"]);
-  else if (rt != null && rt !== sum) issues.push(["bad", `明細加總 ${money(sum)} 與收據合計 ${money(rt)} 不符，可能漏行或數字看錯`]);
+  else if (rt != null && rt !== sum) issues.push(["bad", `明細加總 ${money(sum)} 與收據合計 ${money(rt)} 不符，可能漏筆或數字看錯`]);
   else if (rt != null) issues.push(["ok", "明細加總與收據合計相符"]);
   if (!draft.date) issues.push(["bad", "請填收據日期"]);
-  if (draft.dup) issues.push(["bad", "這張照片已經入帳過"]);
+  if (draft.dup) issues.push(["bad", "這張照片已經扣款過"]);
   return { per, sum, issues, blocked: issues.some(i => i[0] !== "ok") };
 }
 function renderSummary(){
   if (!draft) return;
-  const c = computeDraft();
-  const spent = spentMap();
+  const c = computeDraft(), L = ledger();
   $("#sum").innerHTML = [...c.per].map(([id, v]) => {
     const p = personById(id); if (!p) return "";
-    const after = balanceOf(p, spent) - v;
+    const after = totalsFor(id, L).bal - v;
     return `<div class="r"><span>${esc(p.name)} 扣 <span class="num">${money(v)}</span></span><span class="hint">扣後餘額 <span class="num ${after < 0 ? "neg" : ""}">${money(after)}</span></span></div>`;
-  }).join("")
-    + `<div class="r total"><span>本張合計扣款</span><span class="num">${money(c.sum)}</span></div>`;
+  }).join("") + `<div class="r total"><span>本張合計扣款</span><span class="num">${money(c.sum)}</span></div>`;
   $("#checks").innerHTML = c.issues.map(([t, m]) => `<div class="alert ${t}">${esc(m)}</div>`).join("");
   $("#post").disabled = posting || c.blocked || !$("#verified").checked;
 }
 
-/* ---------- post ---------- */
+/* ---------- 扣款入帳 ---------- */
 $("#post").onclick = async () => {
   if (posting || !draft) return;
   const c = computeDraft(); if (c.blocked || !$("#verified").checked) return;
-  posting = true; $("#post").disabled = true; $("#post").textContent = "入帳中…";
+  posting = true; $("#post").disabled = true; $("#post").textContent = "扣款中…";
   const d = draft;
   try {
     const ref = fs.doc("receipts/" + d.rid);
-    if ((await ref.get()).exists) { toast("這張已經入帳"); draft = null; return; }
+    if ((await ref.get()).exists) { toast("這張已經扣款"); draft = null; return; }
     if (d.hash) {
       const q = await fs.collection("receipts").where("hash", "==", d.hash).get();
-      if (q.docs.some(x => x.data().status === "posted")) { toast("這張照片已經入帳過"); return; }
+      if (q.docs.some(x => x.data().status === "posted")) { toast("這張照片已經扣款過"); return; }
     }
     const no = String(receipts.reduce((m, r) => Math.max(m, parseInt(r.no, 10) || 0), 0) + 1).padStart(3, "0");
     const now = new Date().toISOString();
@@ -636,40 +748,113 @@ $("#post").onclick = async () => {
       history: [{ at: now, action: "posted" }]
     });
     await batch.commit();
-    draft = null; toast(`已入帳，收據 #${no}，共 ${money(c.sum)}`);
+    draft = null; toast(`已扣款，收據 #${no}，共 ${money(c.sum)}`);
   } catch (e) {
-    toast("入帳失敗，資料沒有寫入：" + (e.code || e.message));
+    toast("扣款失敗，資料沒有寫入：" + (e.code || e.message));
   } finally {
-    posting = false; $("#post").textContent = "確認入帳"; render();
+    posting = false; $("#post").textContent = "確認扣款"; render();
   }
 };
 
-/* ---------- overview ---------- */
-function renderOverview(){
-  const spent = spentMap(), tx = new Map();
-  receipts.filter(r => r.status === "posted").forEach(r => (r.rows || []).forEach(x => {
-    if (!tx.has(x.personId)) tx.set(x.personId, []);
-    tx.get(x.personId).push({ date: r.date, amount: x.amount, no: r.no });
-  }));
-  $("#over-body").innerHTML = !people.length ? `<tr><td colspan="4" class="empty">還沒有人員。到「設定」新增後，每人餘額會列在這裡。</td></tr>`
-  : people.map(p => {
-    const s = Number(p.start) || 0, a = spent.get(p.id) || 0, bal = s - a;
-    const rows = (tx.get(p.id) || []).sort((x, y) => (y.date || "").localeCompare(x.date || ""));
-    const det = openPerson === p.id ? `<tr class="detail"><td colspan="4">${rows.length ? rows.map(t => `<div class="row spread"><span>${esc(t.date)} · 收據 #${esc(t.no)}</span><span class="num">${money(-t.amount)}</span></div>`).join("") : `<span class="hint">還沒有扣款</span>`}</td></tr>` : "";
-    return `<tr class="person" data-p="${esc(p.id)}"><td>${esc(p.name)} <span class="hint">（${esc(p.alias)}）</span></td><td class="n num">${money(s)}</td><td class="n num">${money(-a)}</td><td class="n num"><strong class="${bal < 0 ? "neg" : ""}">${money(bal)}</strong></td></tr>${det}`;
+/* ---------- 入金 ---------- */
+$("#dep-date").value = today();
+function depPreview(){
+  const pid = $("#dep-person").value, amt = toAmount($("#dep-amount").value);
+  if (!pid || !amt) { $("#dep-preview").textContent = ""; return; }
+  const t = totalsFor(pid, ledger());
+  $("#dep-preview").textContent = `存入後餘額 ${money(t.bal + amt)}`;
+}
+["#dep-person", "#dep-amount"].forEach(s => $(s).addEventListener("input", depPreview));
+let depBusy = false;
+$("#dep-add").onclick = async () => {
+  if (depBusy) return;
+  const pid = $("#dep-person").value, date = $("#dep-date").value, amount = toAmount($("#dep-amount").value), note = $("#dep-note").value.trim();
+  const errs = [];
+  if (!pid) errs.push("請選擇人員");
+  if (!date) errs.push("請填日期");
+  if (!amount) errs.push("金額要是大於 0 的整數");
+  $("#dep-err").hidden = !errs.length; $("#dep-err").textContent = errs.join("；");
+  if (errs.length) return;
+  depBusy = true; $("#dep-add").disabled = true;
+  try {
+    const p = personById(pid), now = new Date().toISOString();
+    const before = totalsFor(pid, ledger()).bal;
+    await fs.collection("deposits").doc("d" + uid()).set({ personId: pid, personName: p?.name || "", date, amount, note, createdAt: now, status: "posted", history: [{ at: now, action: "posted" }] });
+    toast(`${p?.name} 入金 ${money(amount)}，餘額 ${money(before + amount)}`);
+    $("#dep-amount").value = ""; $("#dep-note").value = ""; $("#dep-preview").textContent = "";
+  } catch (e) { toast("入金失敗，資料沒有寫入：" + (e.code || e.message)); }
+  finally { depBusy = false; $("#dep-add").disabled = false; }
+};
+function renderDeposits(){
+  const box = $("#dep-list");
+  if (!deposits.length) { box.innerHTML = `<div class="empty">新增入金後，紀錄會依時間列在這裡。</div>`; return; }
+  const list = [...deposits].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || ""));
+  box.innerHTML = list.map(d => {
+    const v = d.status !== "posted", ask = confirmDepVoid === d.id;
+    const name = personById(d.personId)?.name || d.personName;
+    return `<div class="rc ${v ? "void" : ""}">
+      <div class="row spread"><strong>${esc(d.date)} · ${esc(name)}</strong><span class="num amt pos">${signed(d.amount)}</span></div>
+      ${d.note ? `<div class="hint">${esc(d.note)}</div>` : ""}
+      <div class="row">${v ? `<span class="pill bad">已撤銷</span>` : ask
+        ? `<span class="hint bad">撤銷後這筆會從餘額扣回。</span><button class="btn small danger" data-dvoid="${esc(d.id)}">確定撤銷</button><button class="btn small" data-dcancel="1">取消</button>`
+        : `<button class="btn small" data-dask="${esc(d.id)}">撤銷</button>`}</div>
+    </div>`;
   }).join("");
-  if (people.length) {
-    const ts = people.reduce((t, p) => t + (Number(p.start) || 0), 0), ta = people.reduce((t, p) => t + (spent.get(p.id) || 0), 0);
-    $("#over-foot").innerHTML = `<tr class="foot"><td>合計</td><td class="n num">${money(ts)}</td><td class="n num">${money(-ta)}</td><td class="n num"><strong class="${ts - ta < 0 ? "neg" : ""}">${money(ts - ta)}</strong></td></tr>`;
-  } else $("#over-foot").innerHTML = "";
+}
+$("#dep-list").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.dask) { confirmDepVoid = b.dataset.dask; renderDeposits(); }
+  if (b.dataset.dcancel) { confirmDepVoid = null; renderDeposits(); }
+  if (b.dataset.dvoid) {
+    const d = deposits.find(x => x.id === b.dataset.dvoid); if (!d) return;
+    b.disabled = true;
+    try { await fs.doc("deposits/" + d.id).update({ status: "voided", history: [...(d.history || []), { at: new Date().toISOString(), action: "voided" }] }); confirmDepVoid = null; toast("入金已撤銷"); }
+    catch { toast("撤銷失敗，請再試一次"); b.disabled = false; }
+  }
+});
 
-  $("#rc-list").innerHTML = !receipts.length ? `<div class="empty">入帳的收據會依時間列在這裡，可以看原圖或撤銷。</div>`
+/* ---------- 總覽 ---------- */
+function renderOverview(){
+  const L = ledger();
+  if (!people.length) { $("#over-body").innerHTML = `<tr><td colspan="5" class="empty">還沒有人員。到「設定」新增後，每人餘額會列在這裡。</td></tr>`; $("#over-foot").innerHTML = ""; }
+  else {
+    const sum = { start: 0, dep: 0, out: 0, bal: 0 };
+    $("#over-body").innerHTML = people.map(p => {
+      const t = totalsFor(p.id, L); Object.keys(sum).forEach(k => sum[k] += t[k]);
+      let det = "";
+      if (openPerson === p.id) {
+        let run = t.start;
+        const rows = L.filter(e => e.personId === p.id).map(e => ({ ...e, after: (run += e.amount) })).reverse();
+        det = `<tr class="detail"><td colspan="5">${rows.length
+          ? `<div class="tl">${rows.map(e => `<span class="num">${esc(e.date)}</span><span>${esc(e.label)}</span><span class="num ${e.amount > 0 ? "pos" : ""}">${signed(e.amount)}</span><span class="num bal">餘 ${money(e.after)}</span>`).join("")}<span class="num">—</span><span>起始金額</span><span></span><span class="num bal">餘 ${money(t.start)}</span></div>`
+          : `<span class="hint">還沒有入金或扣款</span>`}</td></tr>`;
+      }
+      return `<tr class="person" data-p="${esc(p.id)}"><td>${esc(p.name)} <span class="hint">（${esc(p.alias)}）</span></td><td class="n num">${money(t.start)}</td><td class="n num pos">${signed(t.dep)}</td><td class="n num">${money(-t.out)}</td><td class="n num"><strong class="${t.bal < 0 ? "neg" : ""}">${money(t.bal)}</strong></td></tr>${det}`;
+    }).join("");
+    $("#over-foot").innerHTML = `<tr><td>合計</td><td class="n num">${money(sum.start)}</td><td class="n num pos">${signed(sum.dep)}</td><td class="n num">${money(-sum.out)}</td><td class="n num"><strong class="${sum.bal < 0 ? "neg" : ""}">${money(sum.bal)}</strong></td></tr>`;
+  }
+  renderLedgerTable(L);
+  renderReceipts();
+}
+function renderLedgerTable(L){
+  const pid = $("#led-person").value, month = $("#led-month").value, type = $("#led-type").value;
+  const rows = L.filter(e => (!pid || e.personId === pid) && (!month || (e.date || "").startsWith(month)) && (!type || e.type === type)).reverse();
+  $("#led-body").innerHTML = rows.length ? rows.map(e => `<tr><td class="num">${esc(e.date)}</td><td>${esc(personById(e.personId)?.name || "?")}</td><td class="wrap">${esc(e.label)}</td><td class="n num ${e.amount > 0 ? "pos" : ""}">${signed(e.amount)}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="empty">這個條件下沒有紀錄。</td></tr>`;
+  const inSum = rows.filter(e => e.amount > 0).reduce((s, e) => s + e.amount, 0), outSum = rows.filter(e => e.amount < 0).reduce((s, e) => s + e.amount, 0);
+  $("#led-foot").innerHTML = rows.length ? `<tr><td colspan="3">入金合計（${rows.filter(e => e.amount > 0).length} 筆）</td><td class="n num pos">${signed(inSum)}</td></tr>
+    <tr><td colspan="3">扣款合計（${rows.filter(e => e.amount < 0).length} 筆）</td><td class="n num">${money(outSum)}</td></tr>
+    <tr><td colspan="3">淨額</td><td class="n num ${inSum + outSum < 0 ? "neg" : ""}">${signed(inSum + outSum)}</td></tr>` : "";
+}
+["#led-person", "#led-month", "#led-type"].forEach(s => $(s).addEventListener("change", () => renderLedgerTable(ledger())));
+function renderReceipts(){
+  $("#rc-list").innerHTML = !receipts.length ? `<div class="empty">扣款的收據會依時間列在這裡，可以看原圖或撤銷。</div>`
   : receipts.map(r => {
     const v = r.status !== "posted", ask = confirmVoid === r.id;
-    const names = (r.rows || []).map(x => `${esc(x.personName)} ${money(x.amount)}`).join("、");
+    const names = (r.rows || []).map(x => `${esc(personById(x.personId)?.name || x.personName)} ${money(x.amount)}`).join("、");
     const img = openImg === r.id ? (imgCache.has(r.id) ? `<img src="${imgCache.get(r.id)}" alt="收據 #${esc(r.no)} 原圖">` : `<span class="hint">載入原圖中…</span>`) : "";
     return `<div class="rc ${v ? "void" : ""}">
-      <div class="row spread"><strong>#${esc(r.no)} · ${esc(r.date)}</strong><span class="num amt">${money(r.total)}</span></div>
+      <div class="row spread"><strong>#${esc(r.no)} · ${esc(r.date)}</strong><span class="num amt">${money(-r.total)}</span></div>
       <div class="hint">${names}</div>
       ${img}
       <div class="row">
@@ -684,11 +869,11 @@ $("#over-body").addEventListener("click", e => { const tr = e.target.closest("tr
 $("#rc-list").addEventListener("click", async e => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.dataset.img) {
-    const id = b.dataset.img; openImg = openImg === id ? null : id; renderOverview();
-    if (openImg && !imgCache.has(id)) { try { const s = await fs.doc("images/" + id).get(); imgCache.set(id, s.data()?.data || ""); } catch { toast("原圖載入失敗"); } renderOverview(); }
+    const id = b.dataset.img; openImg = openImg === id ? null : id; renderReceipts();
+    if (openImg && !imgCache.has(id)) { try { const s = await fs.doc("images/" + id).get(); imgCache.set(id, s.data()?.data || ""); } catch { toast("原圖載入失敗"); } renderReceipts(); }
   }
-  if (b.dataset.ask) { confirmVoid = b.dataset.ask; renderOverview(); }
-  if (b.dataset.cancel) { confirmVoid = null; renderOverview(); }
+  if (b.dataset.ask) { confirmVoid = b.dataset.ask; renderReceipts(); }
+  if (b.dataset.cancel) { confirmVoid = null; renderReceipts(); }
   if (b.dataset.void) {
     const r = receipts.find(x => x.id === b.dataset.void); if (!r) return;
     b.disabled = true;
@@ -697,8 +882,13 @@ $("#rc-list").addEventListener("click", async e => {
   }
 });
 
-/* ---------- people ---------- */
-function usedIds(){ const s = new Set(); receipts.forEach(r => r.status === "posted" && (r.rows || []).forEach(x => s.add(x.personId))); return s; }
+/* ---------- 人員 ---------- */
+function usedIds(){
+  const s = new Set();
+  receipts.forEach(r => (r.rows || []).forEach(x => s.add(x.personId)));
+  deposits.forEach(d => s.add(d.personId));
+  return s;
+}
 function renderPeople(){
   if (!peopleEdit) peopleEdit = people.map(p => ({...p}));
   const used = usedIds();
@@ -709,9 +899,9 @@ function renderPeople(){
       <div class="ops">
         <button class="btn small" data-mv="-1" data-i="${i}" ${i === 0 ? "disabled" : ""} aria-label="上移">↑</button>
         <button class="btn small" data-mv="1" data-i="${i}" ${i === peopleEdit.length - 1 ? "disabled" : ""} aria-label="下移">↓</button>
-        <button class="btn small danger" data-del="${i}" ${used.has(p.id) ? "disabled title=\"已有帳，不能刪除\"" : ""}>刪除</button>
+        <button class="btn small danger" data-del="${i}" ${used.has(p.id) ? "disabled title=\"已有紀錄，不能刪除\"" : ""}>刪除</button>
       </div></div>`).join("")
-    : `<div class="empty">例如：姓名「王小明」、簡稱「明」、起始金額 10000（預先存入的餐費）。</div>`;
+    : `<div class="empty">例如：姓名「王小明」、簡稱「明」、起始金額 0。</div>`;
 }
 const dirty = () => $("#pp-state").textContent = "尚未儲存";
 $("#pp-add").onclick = () => { peopleEdit.push({ id: "p" + uid(), name: "", alias: "", start: 0 }); renderPeople(); dirty(); document.getElementById("pn-" + peopleEdit.at(-1).id)?.focus(); };
@@ -743,7 +933,7 @@ $("#pp-save").onclick = async () => {
 function render(){
   $("#need-people").hidden = !!people.length;
   $("#need-key").hidden = !!settings.key;
-  renderDraft(); renderOverview();
+  renderDraft(); renderDeposits(); renderOverview(); depPreview();
 }
 })();
 </script>
