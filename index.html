@@ -245,7 +245,6 @@ tr.detail td{background:var(--sunk);padding:8px 10px;white-space:normal}
         <option value="fast">快速：少思考、照片較小</option>
         <option value="careful">仔細：字跡潦草時用，比較慢</option>
       </select></label>
-      <label class="f">收據寫法說明（給 AI 看，寫得越具體越準）<textarea id="ghint" placeholder="例如：&#10;每筆第一個字是日期或店名，不是人名。&#10;名字可能連在一起寫，例如「柏浩」代表柏和浩兩個人。&#10;綠色筆寫的「285元」是合計。&#10;「一」「三」是份數，不是金額。"></textarea></label>
       <div class="row">
         <button class="btn" id="gload">讀取可用模型</button>
         <button class="btn primary" id="gsave">儲存 AI 設定</button>
@@ -269,7 +268,7 @@ const DEFAULT_MODEL = "gemini-3.8-flash";
 
 let fs = null;
 let people = [], receipts = [], deposits = [];
-let settings = { key: "", model: DEFAULT_MODEL, mode: "turbo", hint: "" };
+let settings = { key: "", model: DEFAULT_MODEL, mode: "turbo" };
 let peopleEdit = null, draft = null, ctl = null, posting = false, openPerson = null, confirmVoid = null, confirmDepVoid = null;
 const imgCache = new Map(); let openImg = null;
 const unsubs = [];
@@ -316,9 +315,8 @@ auth.onAuthStateChanged(user => {
   }, denied));
   unsubs.push(fs.doc("config/settings").onSnapshot(s => {
     const d = s.data() || {};
-    settings = { key: d.geminiKey || "", model: d.model || DEFAULT_MODEL, mode: ["turbo", "fast", "careful"].includes(d.mode) ? d.mode : "turbo", hint: d.hint || "" };
+    settings = { key: d.geminiKey || "", model: d.model || DEFAULT_MODEL, mode: ["turbo", "fast", "careful"].includes(d.mode) ? d.mode : "turbo" };
     if (document.activeElement !== $("#gkey")) $("#gkey").value = settings.key;
-    if (document.activeElement !== $("#ghint")) $("#ghint").value = settings.hint;
     $("#gmode").value = settings.mode;
     fillModels([settings.model]); render();
   }, denied));
@@ -442,12 +440,10 @@ $("#add-line").onclick = () => { draft.rows.push(blankRow()); renderLines(); ren
 /* ---------- Gemini ---------- */
 function buildPrompt(){
   const list = people.map(p => `「${p.alias}」= ${p.name}`).join("\n");
-  const hint = settings.hint.trim();
   return `你是收據手寫辨識助手。圖片是一張台灣的餐費收據，多半是手寫繁體中文。每一行通常是「人名簡稱 + 金額」，也可能有合計、找零、日期等其他欄位。
 
 已登記的簡稱：
 ${list}
-${hint ? `\n使用者的補充說明：\n${hint}\n` : ""}
 規則：
 1. 由上到下逐行讀。同一行的簡稱和金額必須一起輸出，不可把上一行的名字配給下一行的金額。
 2. 不要猜。數字只要有不確定（例如 1/7、3/8、0/6、5/6 難分），amount_clear 設 false，並把其他可能的讀法放進 amount_alternatives。完全看不出金額時 amount 設 null。不要依常見價格推測。
@@ -575,7 +571,7 @@ $("#gload").onclick = async () => {
   } catch (e) { $("#gstate").textContent = "金鑰檢查失敗：" + e.message; }
 };
 $("#gsave").onclick = async () => {
-  const data = { geminiKey: $("#gkey").value.trim(), model: $("#gmodel").value || DEFAULT_MODEL, mode: $("#gmode").value, hint: $("#ghint").value.slice(0, 2000), updatedAt: new Date().toISOString() };
+  const data = { geminiKey: $("#gkey").value.trim(), model: $("#gmodel").value || DEFAULT_MODEL, mode: $("#gmode").value, updatedAt: new Date().toISOString() };
   try { await fs.doc("config/settings").set(data); $("#gstate").textContent = "已儲存"; toast("AI 設定已儲存"); }
   catch (e) { $("#gstate").textContent = "儲存失敗：" + e.code; }
 };
